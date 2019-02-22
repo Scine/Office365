@@ -1,6 +1,4 @@
 ##Employee left company.  Reset's password, converts mailbox to shared, add's supervisor to shared mailbox, syncs AD/O365, and removes licenses.##
-##This file is old, but I thouht I'd put this up here.
-
 
 $UserCredential = Get-Credential
 $Session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri https://outlook.office365.com/powershell-liveid/ -Credential $UserCredential -Authentication Basic -AllowRedirection
@@ -48,3 +46,4 @@ ForEach ($DC in $DomainControllers.Name) {
     }
 }
 Invoke-Command -ComputerName machinewithdirsync.domainname.local -ScriptBlock {import-module dirsync;Start-onlinecoexistencesync}
+
