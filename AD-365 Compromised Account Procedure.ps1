@@ -36,13 +36,9 @@ Set-ADAccountPassword -Identity $aduser -Reset -NewPassword (ConvertTo-SecureStr
 
 $Results = write-host "New password is:    $newpass"
 
+connect-azuread
 
 ##Sync Domain Controllers
-
-param(
-    [ValidateSet("ExtraSuper","Normal")]
-    [string]$Mode = 'Normal'
-)  
 
 
 $DomainControllers = Get-ADDomainController -Filter *
