@@ -6,7 +6,7 @@ Import-PSSession $Session
 
 foreach($roomlist in Get-DistributionGroup -RecipientTypeDetails RoomList) {
   $roomlistname = $roomlist.DisplayName
-  Get-DistributionGroupMember $roomlist.alias | 
+  Get-DistributionGroupMember $roomlist.alias |
     Select-Object @{n="Room List";e={$roomlistname}},
-                  @{n="Room";e={$_.DisplayName}}    
+                  @{n="Room";e={$_.DisplayName}}
 }
