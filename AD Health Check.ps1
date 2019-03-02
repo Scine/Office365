@@ -1,44 +1,44 @@
-#Blatantly copied from this guy:  https://pastebin.com/GGMnBs5G  Just wanted it in my repository in case he brought his down. :)
+#Blatantly copied from this guy:  https://pastebin.com/GGMnBs5G Just wanted it in my repository in case he brought his down. :)
 #EDITED TO ONLY SEND EMAIL ON FAILURES/WARNINGS TO HELP CUT DOWN ON SPAM
 #Sets screen buffer from 120 width to 500 width. This stops truncation in the log.
 $pshost = get-host
 $pswindow = $pshost.ui.rawui
- 
+
 $newsize = $pswindow.buffersize
 $newsize.height = 3000
 $newsize.width = 500
 $pswindow.buffersize = $newsize
- 
+
 $newsize = $pswindow.windowsize
 $newsize.height = 50
 $newsize.width = 500
 $pswindow.windowsize = $newsize
- 
+
 #Log Parameters.
 $LogDirectory =  "C:\Temp"
 $LogRetentionDays = 30
- 
+
 #Starts logging.
 New-Item -ItemType directory -Path $LogDirectory -Force | Out-Null
 $Today = Get-Date -Format M-d-y
 Start-Transcript -Append -Path $LogDirectory\ADHealthCheck.$Today.log | Out-Null
- 
+
 #Purges log files older than X days
 $RetentionDate = (Get-Date).AddDays(-$LogRetentionDays)
 Get-ChildItem -Path $LogDirectory -Recurse -Force | Where-Object { !$_.PSIsContainer -and $_.CreationTime -lt $RetentionDate } | Remove-Item -Force
- 
+
 #############################################################################
 #       Author: Vikas Sukhija
-#       Reviewer:    
+#       Reviewer:
 #       Date: 12/25/2014
 #       Satus: Ping,Netlogon,NTDS,DNS,DCdiag Test(Replication,sysvol,Services)
 #       Update: Added Advertising
 #       Description: AD Health Status
 #############################################################################
 ###########################Define Variables##################################
- 
+
 $reportpath = "C:\TaskScheduler\ADReport.htm"
- 
+
 if((test-path $reportpath) -like $false)
 {
 new-item $reportpath -type file
@@ -47,10 +47,10 @@ $smtphost = "smtpserver.domain.local"
 $from = "noreply@domain.com"
 $email1 = "recipient@domain.com"
 $timeout = "60"
- 
+
 ###############################HTml Report Content############################
 $report = $reportpath
- 
+
 Clear-Content $report
 Add-Content $report "<html>"
 Add-Content $report "<head>"
@@ -90,7 +90,7 @@ add-content $report  "<font face='tahoma' color='#003399' size='4'><strong>Activ
 add-content $report  "</td>"
 add-content $report  "</tr>"
 add-content $report  "</table>"
- 
+
 add-content $report  "<table width='100%'>"
 Add-Content $report  "<tr bgcolor='IndianRed'>"
 Add-Content $report  "<td width='9%' align='center'><B>Identity</B></td>"
@@ -104,18 +104,18 @@ Add-Content $report  "<td width='9%' align='center'><B>ServicesTest</B></td>"
 Add-Content $report  "<td width='9%' align='center'><B>AdvertisingTest</B></td>"
 Add-Content $report  "<td width='9%' align='center'><B>FSMOCheckTest</B></td>"
 Add-Content $report  "<td width='9%' align='center'><B>DfsrLastRepTest</B></td>"
- 
+
 Add-Content $report "</tr>"
- 
+
 #####################################Custom Functions#################################
 #        Additional functions added to Vika's script for my customizations.
 $DeclareFunctions = {
     Function Get-DfsrLastUpdateTime {
         param ([string]$ComputerName)
         $ErrorActionPreference = "Stop"
- 
+
         If (!$ComputerName){Throw "You must supply a value for ComputerName."}
- 
+
         $DfsrWmiObj = Get-WmiObject -Namespace "root\microsoftdfs" -Class dfsrVolumeConfig -ComputerName $ComputerName
         If ($DfsrWmiObj.LastChangeTime.Count -le 1){
             [datetime]$LastChangeTime = [System.Management.ManagementDateTimeconverter]::ToDateTime($DfsrWmiObj.LastChangeTime)
@@ -124,54 +124,54 @@ $DeclareFunctions = {
             $OldestChangeTime = ($DfsrWmiObj.LastChangeTime | Measure -Minimum).Minimum
             [datetime]$LastChangeTime = [System.Management.ManagementDateTimeconverter]::ToDateTime($OldestChangeTime)
         }
- 
+
         Return $LastChangeTime
     }
- 
+
     #This one is unused
     Function Get-DfsrGuid {
         param ([string]$ComputerName)
         $ErrorActionPreference = "Stop"
- 
+
         If (!$ComputerName){Throw "You must supply a value for ComputerName."}
- 
+
         $DfsrWmiObj = Get-WmiObject -Namespace "root\microsoftdfs" -Class dfsrVolumeConfig -ComputerName $ComputerName
- 
+
         Return $DfsrWmiObj.VolumeGUID
     }
- 
+
     Function Get-DfsrLastUpdateDelta {
         param ([string]$ComputerName)
         $ErrorActionPreference = "Stop"
- 
+
         If (!$ComputerName){Throw "You must supply a value for ComputerName."}
- 
+
         $LastUpdateTime = Get-DfsrLastUpdateTime -ComputerName $ComputerName
         $TimeDelta = (Get-Date) - $LastUpdateTime
-   
+
         Return $TimeDelta
     }
 }
- 
+
 #####################################Get ALL DC Servers#################################
 $getForest = [system.directoryservices.activedirectory.Forest]::GetCurrentForest()
- 
+
 $DCServers = $getForest.domains | ForEach-Object {$_.DomainControllers} | ForEach-Object {$_.Name}
- 
- 
+
+
 ################Ping Test######
- 
+
 foreach ($DC in $DCServers){
     $Identity = $DC
                     Add-Content $report "<tr>"
     if ( Test-Connection -ComputerName $DC -Count 1 -ErrorAction SilentlyContinue ) {
     Write-Host $DC `t $DC `t Ping Success -ForegroundColor Green
-       
-        $ShortIdentity = $Identity.Replace(('.'+$getForest.Name),'')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+
+        $ShortIdentity = $Identity.Replace(('.'+$getForest.Name),'')
         Add-Content $report "<td bgcolor= 'GainsBoro' align=center><B>$ShortIdentity</B></td>"
                 Add-Content $report "<td bgcolor= 'Aquamarine' align=center>  <B>Success</B></td>"
- 
-               
+
+
                 ##############Netlogon Service Status################
         $serviceStatus = start-job -scriptblock {get-service -ComputerName $($args[0]) -Name "Netlogon" -ErrorAction SilentlyContinue} -ArgumentList $DC
                 wait-job $serviceStatus -timeout $timeout
@@ -187,14 +187,14 @@ foreach ($DC in $DCServers){
                  if ($serviceStatus1.status -eq "Running") {
            Write-Host $DC `t $serviceStatus1.name `t $serviceStatus1.status -ForegroundColor Green
                $svcName = $serviceStatus1.name
-               $svcState = $serviceStatus1.status          
+               $svcState = $serviceStatus1.status
                Add-Content $report "<td bgcolor= 'Aquamarine' align=center><B>$svcState</B></td>"
                   }
                  else
                   {
               Write-Host $DC `t $serviceStatus1.name `t $serviceStatus1.status -ForegroundColor Red
               $svcName = $serviceStatus1.name
-              $svcState = $serviceStatus1.status          
+              $svcState = $serviceStatus1.status
               Add-Content $report "<td bgcolor= 'Red' align=center><B>$svcState</B></td>"
                   }
                 }
@@ -214,14 +214,14 @@ foreach ($DC in $DCServers){
                  if ($serviceStatus1.status -eq "Running") {
            Write-Host $DC `t $serviceStatus1.name `t $serviceStatus1.status -ForegroundColor Green
                $svcName = $serviceStatus1.name
-               $svcState = $serviceStatus1.status          
+               $svcState = $serviceStatus1.status
                Add-Content $report "<td bgcolor= 'Aquamarine' align=center><B>$svcState</B></td>"
                   }
                  else
                   {
               Write-Host $DC `t $serviceStatus1.name `t $serviceStatus1.status -ForegroundColor Red
               $svcName = $serviceStatus1.name
-              $svcState = $serviceStatus1.status          
+              $svcState = $serviceStatus1.status
               Add-Content $report "<td bgcolor= 'Red' align=center><B>$svcState</B></td>"
                   }
                 }
@@ -241,19 +241,19 @@ foreach ($DC in $DCServers){
                  if ($serviceStatus1.status -eq "Running") {
            Write-Host $DC `t $serviceStatus1.name `t $serviceStatus1.status -ForegroundColor Green
                $svcName = $serviceStatus1.name
-               $svcState = $serviceStatus1.status          
+               $svcState = $serviceStatus1.status
                Add-Content $report "<td bgcolor= 'Aquamarine' align=center><B>$svcState</B></td>"
                   }
                  else
                   {
               Write-Host $DC `t $serviceStatus1.name `t $serviceStatus1.status -ForegroundColor Red
               $svcName = $serviceStatus1.name
-              $svcState = $serviceStatus1.status          
+              $svcState = $serviceStatus1.status
               Add-Content $report "<td bgcolor= 'Red' align=center><B>$svcState</B></td>"
                   }
                 }
                ######################################################
- 
+
                ####################Netlogons status##################
                add-type -AssemblyName microsoft.visualbasic
                $cmp = "microsoft.visualbasic.strings" -as [type]
@@ -388,7 +388,7 @@ foreach ($DC in $DCServers){
                 #        Additional column added to Vika's script for my customizations.
                 $DfsrLastUpdateJob = start-job -InitializationScript $DeclareFunctions -scriptblock {Get-DFSRLastUpdateDelta -ComputerName $args[0]} -ArgumentList $DC
                 wait-job $DfsrLastUpdateJob -timeout $timeout
-               
+
                 if($DfsrLastUpdateJob.state -like "Running"){
                     Write-Host $DC `t DFSR Last Rep Test TimeOut -ForegroundColor Yellow
                     Add-Content $report "<td bgcolor= 'Yellow' align=center><B>Timeout</B></td>"
@@ -399,7 +399,7 @@ foreach ($DC in $DCServers){
                     If ($DfsrLastUpdateJob.state -eq "Failed"){$DfsrLastUpdateTestResults = "Fail (Unreadable)"}
                     ElseIf ($DfsrLastUpdateDelta.Hours -ge 23){$DfsrLastUpdateTestResults = ("Fail (" + $DfsrLastUpdateDelta.Minutes + " Min)")}
                     Else {$DfsrLastUpdateTestResults = ("Pass (" + $DfsrLastUpdateDelta.Minutes + " Min)")}
- 
+
                     if($DfsrLastUpdateTestResults -notlike "Fail*") {
                             Write-Host $DC `t DFSR Last Rep Test passed -ForegroundColor Green
                             Add-Content $report "<td bgcolor= 'Aquamarine' align=center><B>$DfsrLastUpdateTestResults</B></td>"
@@ -408,7 +408,7 @@ foreach ($DC in $DCServers){
                             Write-Host $DC `t DFSR Last Rep Test Failed -ForegroundColor Red
                             Add-Content $report "<td bgcolor= 'Red' align=center><B>$DfsrLastUpdateTestResults</B></td>"
                     }
-                }          
+                }
     }
     else {
     Write-Host $DC `t $DC `t Ping Fail -ForegroundColor Red
@@ -422,18 +422,18 @@ foreach ($DC in $DCServers){
             Add-Content $report "<td bgcolor= 'Red' align=center>  <B>Ping Fail</B></td>"
             Add-Content $report "<td bgcolor= 'Red' align=center>  <B>Ping Fail</B></td>"
             Add-Content $report "<td bgcolor= 'Red' align=center>  <B>Ping Fail</B></td>"
-    }            
+    }
 }
- 
+
 Add-Content $report "</tr>"
 ############################################Close HTMl Tables###########################
- 
- 
+
+
 Add-content $report  "</table>"
 Add-Content $report "</body>"
 Add-Content $report "</html>"
- 
- 
+
+
 ########################################################################################
 #############################################Send Email#################################
 $IsHealthy = Get-Content $reportpath | Select-String -Pattern "Fail|Stopped|Timeout"
@@ -450,9 +450,9 @@ If ($IsHealthy -ne $null)
     $msg.isBodyhtml = $true
     $smtp.send($msg)
 }
- 
+
 ########################################################################################
- 
+
 ########################################################################################
-       
+
 Stop-Transcript
