@@ -1,5 +1,5 @@
 ################################################################################################################################################################
-# Script accepts 3 parameters from the command line
+# Script accepts 3 parameters from the command line (PS)	
 #
 # Office365Username - Mandatory - Administrator login ID for the tenant we are querying
 # Office365Password - Mandatory - Administrator login password for the tenant we are querying
