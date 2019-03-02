@@ -3,7 +3,7 @@
 param(
     [ValidateSet("ExtraSuper","Normal")]
     [string]$Mode = 'Normal'
-)  
+)
 
 $un = read-Host 'Please enter username of person to reset password:'
 set-adaccountpassword -identity "$un" -reset
