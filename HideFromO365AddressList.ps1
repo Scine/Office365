@@ -5,7 +5,7 @@ Set-ADUser -Identity "$user" -Replace @{msExchHideFromAddressLists=$True}
 $DomainControllers = Get-ADDomainController -Filter *
 ForEach ($DC in $DomainControllers.Name) {
     Write-Host "Processing for "$DC -ForegroundColor Green
-    If ($Mode -eq "ExtraSuper") { 
+    If ($Mode -eq "ExtraSuper") {
         REPADMIN /kcc $DC
         REPADMIN /syncall /A /e /q $DC
     }
