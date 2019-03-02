@@ -20,7 +20,7 @@
 ## While this script won't cover every possible way a hacker can do bad things in your environment, it can help tremendously
 ## towards getting the mess cleaned up and you notified as early as possible.
 
-## Change the DOMAIN and TLD to your respective ones, and change server.domain.tld to your respective 
+## Change the DOMAIN and TLD to your respective ones, and change server.domain.tld to your respective
 ## server that's syncing AD to Office 365.
 
 Import-Module $((Get-ChildItem -Path $($env:LOCALAPPDATA+"\Apps\2.0\") -Filter Microsoft.Exchange.Management.ExoPowershellModule.dll -Recurse ).FullName|?{$_ -notmatch "_none_"}|select -First 1)
@@ -44,7 +44,7 @@ connect-azuread
 $DomainControllers = Get-ADDomainController -Filter *
 ForEach ($DC in $DomainControllers.Name) {
     Write-Host "Processing for "$DC -ForegroundColor Green
-    If ($Mode -eq "ExtraSuper") { 
+    If ($Mode -eq "ExtraSuper") {
         REPADMIN /kcc $DC
         REPADMIN /syncall /A /e /q $DC
     }
