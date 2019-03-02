@@ -39,7 +39,7 @@ Select-Object @{Label = "First Name";Expression = {$_.GivenName}},
 @{Label = "Email";Expression = {$_.Mail}},
 @{Label = "Manager";Expression = {%{(Get-AdUser $_.Manager -server $ADServer -Properties DisplayName).DisplayName}}},
 @{Label = "Account Status";Expression = {if (($_.Enabled -eq 'TRUE')  ) {'Enabled'} Else {'Disabled'}}}, # the 'if statement# replaces $_.Enabled
-@{Label = "Last LogOn Date";Expression = {$_.lastlogondate}} | 
+@{Label = "Last LogOn Date";Expression = {$_.lastlogondate}} |
 
 #Export CSV report
 
