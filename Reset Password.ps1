@@ -37,7 +37,7 @@ $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Do n
 
 $options = [System.Management.Automation.Host.ChoiceDescription[]]($hide,$no)
 
-$result = $host.ui.PromptForChoice($title, $message, $options, 0) 
+$result = $host.ui.PromptForChoice($title, $message, $options, 0)
 
 switch ($result)
     {
@@ -45,11 +45,11 @@ switch ($result)
         1 {"No"}
         2 {"Field"}
     }
-	
+
 $DomainControllers = Get-ADDomainController -Filter *
 ForEach ($DC in $DomainControllers.Name) {
     Write-Host "Processing for "$DC -ForegroundColor Green
-    If ($Mode -eq "ExtraSuper") { 
+    If ($Mode -eq "ExtraSuper") {
         REPADMIN /kcc $DC
         REPADMIN /syncall /A /e /q $DC
     }
