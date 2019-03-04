@@ -38,7 +38,7 @@ $Results = write-host "New password is:    $newpass"
 
 connect-azuread
 
-##Sync Domain Controllers
+###Sync Domain Controllers
 
 
 $DomainControllers = Get-ADDomainController -Filter *
