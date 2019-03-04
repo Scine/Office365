@@ -70,4 +70,9 @@ Get-InboxRule -Mailbox $mailbox | Select Name, Description, Enabled | FL
 
 Get-InboxRule -Mailbox $mailbox | disable-inboxrule -confirm:$false -AlwaysDeleteOutlookRulesBlob
 
+
+Set-Mailbox $mailbox -ForwardingAddress $Null
+
+Set-Mailbox $mailbox -ForwardingSmtpAddress $Null
+
 Revoke-AzureADUserAllRefreshToken -ObjectId $mailbox
