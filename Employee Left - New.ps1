@@ -6,7 +6,7 @@
 
 
 ##This section requires the profile.ps1 file found here:  https://github.com/Scine/Powershell/blob/master/profile.ps1
-##Put that file under your Documents\Windows Powershell\ folder. 
+##Put that file under your Documents\Windows Powershell\ folder.
 
 #If you don't have 2FA authentication enabled uncomment this section
 
@@ -54,7 +54,7 @@ Set-ADUser -Identity $un -Replace @{msExchHideFromAddressLists=$True}
 $DomainControllers = Get-ADDomainController -Filter *
 ForEach ($DC in $DomainControllers.Name) {
     Write-Host "Processing for "$DC -ForegroundColor Green
-    If ($Mode -eq "ExtraSuper") { 
+    If ($Mode -eq "ExtraSuper") {
         REPADMIN /kcc $DC
         REPADMIN /syncall /A /e /q $DC
     }
