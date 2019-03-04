@@ -2,8 +2,8 @@ Import-Module $((Get-ChildItem -Path $($env:LOCALAPPDATA+"\Apps\2.0\") -Filter M
 $EXOSession = New-ExoPSSession
 Import-PSSession $EXOSession
 
-#This script will enable non-owner mailbox access auditing on every mailbox in your tenancy
-#First, let's get us a cred!
+##This script will enable non-owner mailbox access auditing on every mailbox in your tenancy
+##First, let's get us a cred!
 $userCredential = Get-Credential
 
 #This gets us connected to an Exchange remote powershell service
