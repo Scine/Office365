@@ -1,6 +1,6 @@
 ##This script will pull users mailbox or shared mailbox sizes, and display them, or export them to a CSV, depending on which line/lines you uncomment.
 
-##If you like this script, come over to my github at https://github.com/Scine/Office365 as I add more all the time!
+##If you like this script, come over to my github at https://github.com/Scine/Office365 as I add more all the time.
 
 
 
