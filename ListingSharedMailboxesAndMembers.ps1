@@ -1,4 +1,4 @@
-##This will show you what users have access to what shared mailbox within Office 365
+##This will list all shared Office 365 mailboxes and their resepctive members.  Enjoy!
 
 
 ##This section connects to Office 365 via powershell.  Make sure you have the proper Exchange Powershell modules installed
