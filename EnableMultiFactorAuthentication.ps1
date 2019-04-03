@@ -1,3 +1,5 @@
+##This is to enable multi factor authentication for a single Office 365 account.
+
 ##Note:  This script may be moot at this point since Microsoft
 ##has gotten on top of things when it comes to two factor Authentication
 #Import-PSSession $Session
