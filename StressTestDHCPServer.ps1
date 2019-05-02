@@ -2,6 +2,8 @@
 ##network adapter, then disconnecting and reconnecting to the DHCP server via the
 ##standard ipconfig /release/renew method.
 
+##You MUST run this as an administrator
+
 ##Note, it is looking for the name of your network adapter, so be sure to change
 ##the name down below.  Mine is set to "Ethernet 3"
 
@@ -9,4 +11,6 @@
 
 $mac = [BitConverter]::ToString([BitConverter]::GetBytes((Get-Random -Maximum 0xFFFFFFFFFFFF)), 0, 6).Replace('-', ':')
 
-Set-NetAdapter -Name "Ethernet 3" -MacAddress "$mac"
+Set-NetAdapter -Name "Ethernet 3" -MacAddress "$mac" -confirm:$false
+
+ipconfig /release && ipconfig /renew
