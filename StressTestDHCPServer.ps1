@@ -15,12 +15,12 @@ start-sleep 3
 
 $mac = [BitConverter]::ToString([BitConverter]::GetBytes((Get-Random -Maximum 0xFFFFFFFFFFFF)), 0, 6).Replace('-', ':')
 
-start-sleep 10
+start-sleep 5
 
 Set-NetAdapter -Name "$ethernetname" -MacAddress "$mac" -confirm:$false
 
 start-sleep 10
 ipconfig /release "$ethernetname"
 
-start-sleep 10
+start-sleep 5
 ipconfig /renew "$ethernetname"
