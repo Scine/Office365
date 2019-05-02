@@ -13,4 +13,5 @@ $mac = [BitConverter]::ToString([BitConverter]::GetBytes((Get-Random -Maximum 0x
 
 Set-NetAdapter -Name "Ethernet 3" -MacAddress "$mac" -confirm:$false
 
-ipconfig /release && ipconfig /renew
+ipconfig /release
+ipconfig /renew
