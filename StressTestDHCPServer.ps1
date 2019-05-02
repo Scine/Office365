@@ -13,7 +13,7 @@ $ethernetname = "Ethernet 3"
 
 $mac = [BitConverter]::ToString([BitConverter]::GetBytes((Get-Random -Maximum 0xFFFFFFFFFFFF)), 0, 6).Replace('-', ':')
 
-Set-NetAdapter -Name "ethernetname" -MacAddress "$mac" -confirm:$false
+Set-NetAdapter -Name "$ethernetname" -MacAddress "$mac" -confirm:$false
 
 ipconfig /release "$ethernetname"
 ipconfig /renew "$ethernetname"
