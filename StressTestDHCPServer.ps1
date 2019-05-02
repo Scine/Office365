@@ -9,9 +9,11 @@
 
 ##This line generates a random MAC address and puts it in the variable called $mac
 
+$ethernetname = "Ethernet 3"
+
 $mac = [BitConverter]::ToString([BitConverter]::GetBytes((Get-Random -Maximum 0xFFFFFFFFFFFF)), 0, 6).Replace('-', ':')
 
-Set-NetAdapter -Name "Ethernet 3" -MacAddress "$mac" -confirm:$false
+Set-NetAdapter -Name "ethernetname" -MacAddress "$mac" -confirm:$false
 
 ipconfig /release
 ipconfig /renew
