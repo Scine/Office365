@@ -2,7 +2,7 @@
 ##has gotten on top of things when it comes to two factor Authentication
 ##within scripting now.  However, I wanted to post this regardless just in case.
 
-##Enjoy!
+##Find scripts like this at https://github.com/Scine/Office365  Enjoy!
 
 ##Without 2FA authentication enabled uncomment this section.
 

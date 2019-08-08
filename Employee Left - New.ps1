@@ -4,7 +4,6 @@
 ##Change the DomainForOffice365 to your domain.  Specifically the part before .onmicrosoft.com
 ##Also change yourdomain at various points.  The OU "Disabled Accounts" portion moves the account to that OU, and keeps things tidy.
 
-
 ##This section requires the profile.ps1 file found here:  https://github.com/Scine/Powershell/blob/master/profile.ps1
 ##Put that file under your Documents\Windows Powershell\ folder.
 
@@ -62,3 +61,6 @@ ForEach ($DC in $DomainControllers.Name) {
         REPADMIN /syncall $DC "dc=yourdomain,dc=local" /d /e /q
     }
 }
+
+
+##Find scripts like this at https://github.com/Scine/Office365  Enjoy!
