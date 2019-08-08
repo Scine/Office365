@@ -1,6 +1,8 @@
 ##This script is to disable users, change their passwords, move them to a different OU, force sync your domain controllers, remove Office 365 licenses,
 ##add an Exchange 2 license for litigation hold, and turn on litigation hold on the account.
 
+##This is being deprecated, but I thought I'd leave it up for anyone in case they might find it useful.
+
 ##Change the DomainForOffice365 to your domain.  Specifically the part before .onmicrosoft.com
 ##Also change yourdomain at various points.  The OU "Disabled Accounts" portion moves the account to that OU, and keeps things tidy.
 
