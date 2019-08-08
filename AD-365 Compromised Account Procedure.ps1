@@ -2,7 +2,7 @@
 
 ## This Powershell script will generate a random 10 character password, based upon information found here:
 ## https://www.undocumented-features.com/2016/09/20/powershell-random-password-generator/
-## Note:  You can change the length in the $newpass line from 10 to whatever you want
+## Note: You can change the length in the $newpass line from 10 to whatever you want
 
 ## It will then change the AD user's password to the random one generated and let you know the new password
 
