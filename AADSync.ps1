@@ -1,5 +1,5 @@
 ##This forces AD Connect sync to kick off from Active Directory to Office 365. Assuming you have AD Connect set up on one of your servers.
-##change FQDN on line 4 to the server's FQDN name
+##change FQDN on line 4 to the server's FQDN name.
 
 $AADComputer = "FQDN"
 $session = New-PSSession -ComputerName $AADComputer
