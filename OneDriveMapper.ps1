@@ -1,15 +1,29 @@
-##OneDrive Map to Drive Letter
+######## 
+#OneDriveMapper
+# FOR AN UP-TO-DATE VERSION - VISIT: https://gitlab.com/Lieben/OnedriveMapper_V3/blob/master/OneDriveMapper.ps1
+#Copyright:         Free to use, please leave this header intact 
+#Author:            Jos Lieben (OGD)
+#Company:           OGD (http://www.ogd.nl) 
+#Script help:       http://www.lieben.nu, please provide a decrypted Fiddler Trace Log if you're using Native auth and having issues
+#Purpose:           This script maps Onedrive for Business and/or maps a configurable number of Sharepoint Libraries
+#Enterprise users:  This script is not recommended for Enterprise use as no dedicated support is available. Check www.lieben.nu for enterprise options.
+
+#Todo:
+#1 remove undesired network locations and do not error out when it already exists and matches the desired location
+#2 MFA revamp (done, Native mode only!)
+#3 try to use InternetGetCookie function from wininet.dll
+
 param(
     [Switch]$asTask,
     [Switch]$fallbackMode,
     [Switch]$hideConsole
 )
 
-$version = "3.19"
+$version = "3.21"
 
 ####MANDATORY MANUAL CONFIGURATION
-$authMethod            = "native"                  #Uses IE automation (old method) when set to ie, uses new native method when set to 'native'
-$O365CustomerName      = "ogd"          #This should be the name of your tenant (example, ogd as in ogd.onmicrosoft.com)
+$authMethod            = "native"                  #Uses AzureAD integrated when set to "azure", Uses IE automation (old method) when set to "ie", uses new native method when set to "native"
+$O365CustomerName      = "ogd"          #This should be the name of your tenant (example, ogd as in ogd.onmicrosoft.com) 
 $debugmode             = $False                    #Set to $True for debugging purposes. You'll be able to see the script navigate in Internet Explorer if you're using IE auth mode
 $userLookupMode        = 3                         #1 = Active Directory UPN, 2 = Active Directory Email, 3 = Azure AD Joined Windows 10, 4 = query user for his/her login, 5 = lookup by registry key, 6 = display full form (ask for both username and login if no cached versions can be found), 7 = whoami /upn
 $AzureAADConnectSSO    = $False                    #NOT NEEDED FOR NATIVE AUTH, if set to True, will automatically remove AzureADSSO registry key before mapping, and then readd them after mapping. Otherwise, mapping fails because AzureADSSO creates a non-persistent cookie
@@ -52,11 +66,11 @@ $autoMapFavoritesDrive = "S"                       #Driveletter when using autom
 $autoMapFavoritesLabel = "Teams"                   #Label of favorites container, ie; folder name if automapFavoritesMode = "Onedrive", drive label if automapFavoritesMode = "Converged"
 $autoMapFavoritesDrvLetterList = "DEFGHIJKLMNOPQRSTUVWXYZ" #List of driveletters that shall be used (you can ommit some of yours "reserved" letters)
 $favoriteSitesDLName   = "Gedeelde  Documenten"    #Normally autodetected, default document library name in Teams/Groups/Sites to map in conjunction with $autoMapFavoriteSites, note the double spaces! Use Shared  Documents for english language tenants
-$restartExplorer       = $False                    #Leave at False unless you're redirecting folders and they don't get redirected properly
+$restartExplorer       = $True                     #You can safely set this to False if you're not redirecting folders
 $autoResetIE           = $False                    #always clear all Internet Explorer cookies before running (prevents certain occasional issues with IE)
 $authenticateToProxy   = $False                    #use system proxy settings and authenticate automatically
-$libraryName           = "Documents"               #leave this default, unless you wish to map a non-default onedrive library you've created
-$autoKillIE            = $True                     #Kill any running Internet Explorer processes prior to running the script to prevent security errors when mapping
+$libraryName           = "Documents"               #leave this default, unless you wish to map a non-default onedrive library you've created 
+$autoKillIE            = $True                     #Kill any running Internet Explorer processes prior to running the script to prevent security errors when mapping 
 $abortIfNoAdfs         = $False                    #If set to True, will stop the script if no ADFS server has been detected during login
 $adfsSmartLink         = $Null                     #If set, the ADFS smartlink will be used to log in to Office 365. For more info, read the FAQ at http://http://www.lieben.nu/liebensraum/onedrivemapper/onedrivemapper-faq/
 $displayErrors         = $True                     #show errors to user in visual popups
@@ -73,13 +87,12 @@ $urlOpenAfter          = ""                        #This URL will be opened by t
 $showProgressBar       = $True                     #will show a progress bar to the user
 $progressBarColor      = "#CC99FF"
 $progressBarText       = "OnedriveMapper v$version is connecting your drives..."
-$versionCheck          = $False                     #will check if running the latest version, if not, this will be logged to the logfile, no personal data is transmitted.
 $autoDetectProxy       = $False                    #if set to $False, unchecks the 'Automatically detect proxy settings' setting in IE; this greatly enhanced WebDav performance, set to true to not modify this IE setting (leave as is)
 $forceUserName         = ''                        #if anything is entered here, userLookupMode is ignored
-$forcePassword         = ''                        #if anything is entered here, the user won't be prompted for a password. This function is not recommended, as your password could be stolen from this file
-$autoProtectedMode     = $True                     #Automatically temporarily disable IE Protected Mode if it is enabled. ProtectedMode has to be disabled for the script to function
+$forcePassword         = ''                        #if anything is entered here, the user won't be prompted for a password. This function is not recommended, as your password could be stolen from this file 
+$autoProtectedMode     = $True                     #Automatically temporarily disable IE Protected Mode if it is enabled. ProtectedMode has to be disabled for the script to function 
 $addShellLink          = $False                    #Adds a link to Onedrive to the Shell under Favorites (Windows 7, 8 / 2008R2 and 2012R2 only) If you use a remote path, google EnableShellShortcutIconRemotePath
-$logfile               = ($env:APPDATA + "\OneDriveMapper_$version.log")    #Logfile to log to
+$logfile               = ($env:APPDATA + "\OneDriveMapper_$version.log")    #Logfile to log to 
 $pwdCache              = ($env:APPDATA + "\OneDriveMapper.tmp")    #file to store encrypted password into, change to $Null to disable
 $loginCache            = ($env:APPDATA + "\OneDriveMapper.tmp2")    #file to store encrypted login into, change to $Null to disable
 $allowFallbackMode     = $True                     #if set to True, and the selected authentication method fails, onedrivemapper will try again using the other authentication method
@@ -97,13 +110,13 @@ if($showConsoleOutput -eq $False){
     }catch{$Null}
 }
 
-########
+######## 
 #Required resources and some customizations you'll probably not use
-########
+######## 
 $arguments = "& '" + $myinvocation.mycommand.definition + "'"
-$mapresult = $False
+$mapresult = $False 
 
-$protectedModeValues = @{}
+$protectedModeValues = @{} 
 $privateSuffix = "-my"
 $script:errorsForUser = ""
 $userLoginRegistryKey = "HKCU:\System\CurrentControlSet\Control\CustomUID"
@@ -120,17 +133,11 @@ if($adfsSmartLink){
     $o365loginURL = "https://login.microsoftonline.com/login.srf?msafed=0"
 }
 
-$O365CustomerName = $O365CustomerName.ToLower()
+$O365CustomerName = $O365CustomerName.ToLower() 
 #for people that don't RTFM, fix wrongly entered customer names:
 $O365CustomerName = $O365CustomerName -Replace ".onmicrosoft.com",""
-$forceUserName = $forceUserName.ToLower()
-$finalURLs = @()
-$finalURLs += "https://portal.office.com"
-$finalURLs += "https://outlook.office365.com"
-$finalURLs += "https://outlook.office.com"
-$finalURLs += "https://$($O365CustomerName)-my.sharepoint.com"
-$finalURLs += "https://$($O365CustomerName).sharepoint.com"
-$finalURLs += "https://www.office.com"
+$forceUserName = $forceUserName.ToLower() 
+$finalURLs = @("https://portal.office.com","https://outlook.office365.com","https://outlook.office.com","https://$($O365CustomerName)-my.sharepoint.com","https://$($O365CustomerName).sharepoint.com","https://www.office.com")
 
 function log{
     param (
@@ -185,7 +192,7 @@ function ResetLog{
                     #Already a backup file, delete it
                     Remove-Item ($logfile + ".old") -Force -Confirm:$False
                 }
-                #Now lets rename
+                #Now lets rename 
                 Rename-Item -path $logfile -NewName ($logfile + ".old") -Force -Confirm:$False
                 #Start a new log
                 log -text "******** Log file reset after reaching maximum size ********`n"
@@ -198,13 +205,13 @@ function ResetLog{
 
 $scriptPath = $MyInvocation.MyCommand.Definition
 ResetLog
-log -text "-----$(Get-Date) OneDriveMapper v$version - $($env:USERNAME) on $($env:COMPUTERNAME) starting-----"
+log -text "-----$(Get-Date) OneDriveMapper v$version - $($env:USERNAME) on $($env:COMPUTERNAME) starting-----" 
 
 ###THIS ONLY HAS TO BE CONFIGURED IF YOU WANT TO MAP USER SECURITY GROUPS TO SHAREPOINT SITES
 if($desiredMappings.mapOnlyForSpecificGroup | Where-Object{$_.Length -gt 0}){
     try{
         $groups = ([ADSISEARCHER]"(member:1.2.840.113556.1.4.1941:=$(([ADSISEARCHER]"samaccountname=$($env:USERNAME)").FindOne().Properties.distinguishedname))").FindAll().Properties.distinguishedname -replace '^CN=([^,]+).+$','$1'
-        log -text "cached user group membership because you have configured mappings where the mapOnlyForSpecificGroup option was configured"
+        log -text "cached user group membership because you have configured mappings where the mapOnlyForSpecificGroup option was configured"   
     }catch{
         log -text "failed to cache user group membership, ignoring these mappings because of: $($Error[0])" -fout
         $desiredMappings = $desiredMappings | Where-Object{$_.mapOnlyForSpecificGroup.Length -eq 0}
@@ -296,7 +303,7 @@ function Add-NetworkLocation
             $Shortcut.TargetPath = $networkLocationTarget
             if([System.IO.File]::Exists($iconPath)){
                 $Shortcut.IconLocation = "$($iconPath), 0"
-            }
+            }            
             $Shortcut.Description = "Created $(Get-Date -Format s) by $($MyInvocation.MyCommand)."
             $Shortcut.Save()
         }
@@ -306,28 +313,6 @@ function Add-NetworkLocation
             return $false
         }
         return $true
-    }
-}
-
-function handleSpoReAuth{
-    Param(
-        $res
-    )
-    try{
-        if((returnEnclosedFormValue -res $res -searchString "<form method=`"POST`" name=`"hiddenform`" action=`"" -decode) -ne -1){
-            $nextURL = returnEnclosedFormValue -res $res -searchString "<form method=`"POST`" name=`"hiddenform`" action=`"" -decode
-            $code = returnEnclosedFormValue -res $res -searchString "<input type=`"hidden`" name=`"code`" value=`""
-            $id_token = returnEnclosedFormValue -res $res -searchString "<input type=`"hidden`" name=`"id_token`" value=`""
-            $session_state = returnEnclosedFormValue -res $res -searchString "<input type=`"hidden`" name=`"session_state`" value=`""
-            $body = "code=$code&id_token=$id_token&session_state=$session_state"
-        }
-        if($nextURL.Length -gt 10){
-            log -text "Retrieving Sharepoint cookie step 2 at $nextURL"
-            $res = JosL-WebRequest -url $nextURL -Method POST -body $body
-        }
-        return $res
-    }catch{
-        log -text "Problem reported during sharepoint reauth: $($Error[0])" -fout
     }
 }
 
@@ -357,7 +342,7 @@ function handleMFArequest{
     $body = @{"AuthMethodId"=$mfaMethod;"Method"="BeginAuth";"ctx"=$ctx;"flowToken"=$sFT}
     $customHeaders = @{"canary" = $apiCanary;"hpgrequestid" = $res.Headers["x-ms-request-id"];"client-request-id"=$clientId;"hpgid"=1114;"hpgact"=2000}
     try{
-        $res = JosL-WebRequest -url "https://login.microsoftonline.com/common/SAS/BeginAuth" -Method POST -customHeaders $customHeaders -body ($body | ConvertTo-Json) -referer $res.rawResponse.ResponseUri.AbsoluteUri -contentType "application/json"
+        $res = New-WebRequest -url "https://login.microsoftonline.com/common/SAS/BeginAuth" -Method POST -customHeaders $customHeaders -body ($body | ConvertTo-Json) -referer $res.rawResponse.ResponseUri.AbsoluteUri -contentType "application/json"
         $result = $res.Content | convertfrom-json
         $sFT = $result.FlowToken
         $ctx = $result.Ctx
@@ -375,7 +360,7 @@ function handleMFArequest{
             Throw "Waited longer than 60 seconds for MFA request to be validated, aborting"
         }
         try{
-            $res = JosL-WebRequest -url "https://login.microsoftonline.com/common/SAS/EndAuth" -Method POST -customHeaders $customHeaders -body ($body | ConvertTo-Json) -referer $res.rawResponse.ResponseUri.AbsoluteUri -contentType "application/json"
+            $res = New-WebRequest -url "https://login.microsoftonline.com/common/SAS/EndAuth" -Method POST -customHeaders $customHeaders -body ($body | ConvertTo-Json) -referer $res.rawResponse.ResponseUri.AbsoluteUri -contentType "application/json"
             $result = $res.Content | convertfrom-json
             if($result.Success){
                 break
@@ -400,7 +385,7 @@ function handleMFArequest{
             $type=1
         }
         $body = "type=$type&request=$ctx&mfaAuthMethod=$mfaAuthMethod&canary=$canary&login=$userUPN&flowToken=$sFT&hpgrequestid=$($customHeaders["hpgrequestid"])&sacxt=&i2=&i17=&i18=&i19=7406"
-        $res = JosL-WebRequest -url "https://login.microsoftonline.com/common/SAS/ProcessAuth" -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri
+        $res = New-WebRequest -url "https://login.microsoftonline.com/common/SAS/ProcessAuth" -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri
         return $res
     }catch{
         Throw "SAS ProcessAuth failure"
@@ -436,7 +421,7 @@ function createFavoritesShortcutToO4B{
                 $Shortcut.Save()
             }catch{
                 Throw
-            }
+            } 
         }
     }else{
         Throw "Links folder does not exist"
@@ -516,7 +501,7 @@ public extern static int SHSetKnownFolderPath(ref Guid folderId, uint flags, Int
     } Else {
         Throw New-Object System.IO.DirectoryNotFoundException "Could not find part of the path $Path."
     }
-
+	
 	Attrib +r $Path
     Return $Path
 }
@@ -575,19 +560,7 @@ function getElementById{
     }
 }
 
-function ConvertTo-Json20([object] $item){
-    add-type -assembly system.web.extensions
-    $ps_js=new-object system.web.script.serialization.javascriptSerializer
-    return $ps_js.Serialize($item)
-}
-
-function ConvertFrom-Json20([object] $item){
-    add-type -assembly system.web.extensions
-    $ps_js=new-object system.web.script.serialization.javascriptSerializer
-    return ,$ps_js.DeserializeObject($item)
-}
-
-function JosL-WebRequest{
+function New-WebRequest{
     Param(
         $url,
         $method="GET",
@@ -616,7 +589,7 @@ function JosL-WebRequest{
                     $attempts = 0
                     while($true){
                         try{
-                            $userCert = (Get-ChildItem -Path Cert:\CurrentUser\My | Where-Object {($_.extensions.Format(1)[0].split('(')[0]).Split('=')[-1] -like "*$($certificateTemplateName)*"})[0]
+                            $userCert = (Get-ChildItem -Path Cert:\CurrentUser\My | Where-Object {($_.extensions.Format(1)[0].split('(')[0]).Split('=')[-1] -like "*$($certificateTemplateName)*"})[0]       
                             if(!$userCert){Throw}
                             break
                         }catch{
@@ -630,10 +603,22 @@ function JosL-WebRequest{
                             }
                         }
                     }
-
-                }
+                    
+                }                
                 $request.ClientCertificates.AddRange($userCert)
             }
+
+            #add device auth certificate
+            if($url.startsWith("https://device.login.microsoftonline.com")){
+                try{
+                    $cert = dir Cert:\LocalMachine\My\ | where { $_.Issuer -match "CN=MS-Organization-Access" }
+                    $request.ClientCertificates.AddRange($cert)
+                    log -text "detected device authentication prompt and used $($cert.Subject)"
+                }catch{
+                    log -text "detected device authentication prompt and failed to use/retrieve certificate" -fout
+                }
+            }
+
             $request.TimeOut = 10000
             $request.Method = $method
             $request.Referer = $referer
@@ -642,7 +627,7 @@ function JosL-WebRequest{
                 $request.UseDefaultCredentials = $True
             }
             if($customHeaders){
-                $customHeaders.Keys | % {
+                $customHeaders.Keys | % { 
                     $request.Headers[$_] = $customHeaders.Item($_)
                 }
             }
@@ -723,7 +708,7 @@ function handleAzureADConnectSSO{
         if((checkRegistryKeyValue -basePath "HKLM:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\nsatc.net\aadg.windows.net" -entryName "https") -eq 1){
             log -text "ERROR: https://aadg.windows.net.nsatc.net found in IE Local Intranet sites, Azure AD Connect SSO is only supported if you let OnedriveMapper set the registry keys! Don't set this site through GPO" -fout
             $failed = $True
-        }
+        } 
         if((checkRegistryKeyValue -basePath "HKCU:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\microsoftazuread-sso.com\autologon" -entryName "https") -eq 1){
             log -text "ERROR: https://autologon.microsoftazuread-sso.com found in IE Local Intranet sites, Azure AD Connect SSO is only supported if you let OnedriveMapper set the registry keys! Don't set this site through GPO" -fout
             $failed = $True
@@ -731,22 +716,22 @@ function handleAzureADConnectSSO{
         if((checkRegistryKeyValue -basePath "HKCU:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\nsatc.net\aadg.windows.net" -entryName "https") -eq 1){
             log -text "ERROR: https://aadg.windows.net.nsatc.net found in IE Local Intranet sites, Azure AD Connect SSO is only supported if you let OnedriveMapper set the registry keys! Don't set this site through GPO" -fout
             $failed = $True
-        }
+        } 
         if($failed -eq $False){
             if($initial){
                 #check AzureADConnect SSO intranet sites
                 if((checkRegistryKeyValue -basePath "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\microsoftazuread-sso.com\autologon" -entryName "https") -eq 1){
-                    $res = remove-item "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\microsoftazuread-sso.com\autologon"
+                    $res = remove-item "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\microsoftazuread-sso.com\autologon"    
                     log -text "Automatically removed autologon.microsoftazuread-sso.com from intranet sites for this user"
                 }
                 if((checkRegistryKeyValue -basePath "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\nsatc.net\aadg.windows.net" -entryName "https") -eq 1){
-                    $res = remove-item "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\nsatc.net\aadg.windows.net"
-                    log -text "Automatically removed aadg.windows.net.nsatc.net from intranet sites for this user"
+                    $res = remove-item "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\nsatc.net\aadg.windows.net" 
+                    log -text "Automatically removed aadg.windows.net.nsatc.net from intranet sites for this user"   
                 }
             }else{
                 #log results, try to automatically add trusted sites to user trusted sites if not yet added
                 if((addSiteToIEZoneThroughRegistry -siteUrl "aadg.windows.net.nsatc.net" -mode 1) -eq $True){log -text "Automatically added aadg.windows.net.nsatc.net to intranet sites for this user"}
-                if((addSiteToIEZoneThroughRegistry -siteUrl "autologon.microsoftazuread-sso.com" -mode 1) -eq $True){log -text "Automatically added autologon.microsoftazuread-sso.com to intranet sites for this user"}
+                if((addSiteToIEZoneThroughRegistry -siteUrl "autologon.microsoftazuread-sso.com" -mode 1) -eq $True){log -text "Automatically added autologon.microsoftazuread-sso.com to intranet sites for this user"}   
             }
         }
     }
@@ -780,33 +765,8 @@ function loadSecureString{
     }
 }
 
-function versionCheck{
-    Param(
-        $currentVersion
-    )
-    $apiURL = "http://om.lieben.nu/lieben_api.php?script=OnedriveMapper&version=$currentVersion"
-    $apiKeyword = "latestOnedriveMapperVersion"
-    try{
-        $result = JosL-WebRequest -Url $apiURL
-    }catch{
-        Throw "Failed to connect to API url for version check: $apiURL $($Error[0])"
-    }
-    try{
-        $keywordIndex = $result.Content.IndexOf($apiKeyword)
-        if($keywordIndex -lt 1){
-            Throw ""
-        }
-    }catch{
-        Throw "Connected to API url for version check, but invalid API response"
-    }
-    $latestVersion = $result.Content.SubString($keywordIndex+$apiKeyword.Length+1,4)
-    if($latestVersion -ne $currentVersion){
-        Throw "OnedriveMapper version mismatch, current version: v$currentVersion, latest version: v$latestVersion"
-    }
-}
-
 function startWebDavClient{
-    $Source = @"
+    $Source = @" 
         using System;
         using System.Text;
         using System.Security;
@@ -861,7 +821,7 @@ function startWebDavClient{
             public static extern uint EventUnregister(long RegHandle);
         }
     }
-"@
+"@ 
     try{
         log -text "Attempting to automatically start the WebDav client without elevation..."
         $compilerParameters = New-Object System.CodeDom.Compiler.CompilerParameters
@@ -881,26 +841,22 @@ function startWebDavClient{
     }
 }
 
-function restart_explorer{
-    log -text "Restarting Explorer.exe to make the drive(s) visible"
-    #kill all running explorer instances of this user
-    $explorerStatus = Get-ProcessWithOwner explorer
-    if($explorerStatus -eq 0){
-        log -text "no instances of Explorer running yet, at least one should be running" -warning
-    }elseif($explorerStatus -eq -1){
-        log -text "ERROR Checking status of Explorer.exe: unable to query WMI" -fout
-    }else{
-        log -text "Detected running Explorer processes, attempting to shut them down..."
-        foreach($Process in $explorerStatus){
-            try{
-                Stop-Process $Process.handle | Out-Null
-                log -text "Stopped process with handle $($Process.handle)"
-            }catch{
-                log -text "Failed to kill process with handle $($Process.handle)" -fout
-            }
-        }
-    }
+function restart_explorer{ 
+    log -text "Refreshing Explorer to make the drive(s) visible" 
+$definition = @'
+[System.Runtime.InteropServices.DllImport("Shell32.dll")] 
+private static extern int SHChangeNotify(int eventId, int flags, IntPtr item1, IntPtr item2);
+public static void Refresh() {
+    SHChangeNotify(0x8000000, 0x1000, IntPtr.Zero, IntPtr.Zero);    
 }
+'@
+    try{
+        Add-Type -MemberDefinition $definition -Namespace WinAPI -Name Explorer
+        [WinAPI.Explorer]::Refresh()
+    }catch{
+        log -text "Failed to refresh Explorer" -fout
+    }
+}  
 function queryForAllCreds {
     Param(
         [Parameter(Mandatory=$true)]$titleText,
@@ -909,86 +865,86 @@ function queryForAllCreds {
         [Parameter(Mandatory=$true)]$loginLabel,
         [Parameter(Mandatory=$true)]$passwordLabel
     )
-    $objBalloon = New-Object System.Windows.Forms.NotifyIcon
-    $objBalloon.BalloonTipIcon = "Info"
-    $objBalloon.BalloonTipTitle = $titleText
-    $objBalloon.BalloonTipText = "OneDriveMapper - www.lieben.nu"
-    $objBalloon.Visible = $True
-    $objBalloon.ShowBalloonTip(10000)
-
-    $userForm = New-Object 'System.Windows.Forms.Form'
-    $InitialFormWindowState = New-Object 'System.Windows.Forms.FormWindowState'
-    $Form_StateCorrection_Load= {$userForm.WindowState = $InitialFormWindowState}
-    $userForm.Text = $titleText
-    $userForm.Size = New-Object System.Drawing.Size(400,380)
-    $userForm.StartPosition = "CenterScreen"
-    $userForm.AutoSize = $False
-    $userForm.MinimizeBox = $False
-    $userForm.MaximizeBox = $False
-    $userForm.SizeGripStyle= "Hide"
+    $objBalloon = New-Object System.Windows.Forms.NotifyIcon  
+    $objBalloon.BalloonTipIcon = "Info" 
+    $objBalloon.BalloonTipTitle = $titleText 
+    $objBalloon.BalloonTipText = "OneDriveMapper - www.lieben.nu" 
+    $objBalloon.Visible = $True  
+    $objBalloon.ShowBalloonTip(10000) 
+ 
+    $userForm = New-Object 'System.Windows.Forms.Form' 
+    $InitialFormWindowState = New-Object 'System.Windows.Forms.FormWindowState' 
+    $Form_StateCorrection_Load= {$userForm.WindowState = $InitialFormWindowState}  
+    $userForm.Text = $titleText 
+    $userForm.Size = New-Object System.Drawing.Size(400,380) 
+    $userForm.StartPosition = "CenterScreen" 
+    $userForm.AutoSize = $False 
+    $userForm.MinimizeBox = $False 
+    $userForm.MaximizeBox = $False 
+    $userForm.SizeGripStyle= "Hide" 
     $userForm.WindowState = "Normal"
-    $userForm.FormBorderStyle="Fixed3D"
-    $userForm.KeyPreview = $True
-    $userForm.Add_KeyDown({if ($_.KeyCode -eq "Enter"){$userForm.Close()}})
+    $userForm.FormBorderStyle="Fixed3D" 
+    $userForm.KeyPreview = $True 
+    $userForm.Add_KeyDown({if ($_.KeyCode -eq "Enter"){$userForm.Close()}})   
 
-    $OKButton = New-Object System.Windows.Forms.Button
-    $OKButton.Location = New-Object System.Drawing.Size(290,300)
-    $OKButton.Size = New-Object System.Drawing.Size(90,30)
+    $OKButton = New-Object System.Windows.Forms.Button 
+    $OKButton.Location = New-Object System.Drawing.Size(290,300) 
+    $OKButton.Size = New-Object System.Drawing.Size(90,30) 
     $OKButton.Text = $buttonText
-    $OKButton.Add_Click({$userForm.Close()})
-    $userForm.Controls.Add($OKButton)
+    $OKButton.Add_Click({$userForm.Close()}) 
+    $userForm.Controls.Add($OKButton)  
 
-    $objTextBox = New-Object System.Windows.Forms.TextBox
-    $objTextBox.Location = New-Object System.Drawing.Size(10,10)
-    $objTextBox.Size = New-Object System.Drawing.Size(370,180)
+    $objTextBox = New-Object System.Windows.Forms.TextBox 
+    $objTextBox.Location = New-Object System.Drawing.Size(10,10) 
+    $objTextBox.Size = New-Object System.Drawing.Size(370,180) 
     $objTextBox.Multiline = $True
     $objTextBox.ReadOnly = $True
     $objTextBox.Text = $introText
-    $userForm.Controls.Add($objTextBox)
+    $userForm.Controls.Add($objTextBox)  
 
-    $userLabel = New-Object System.Windows.Forms.Label
-    $userLabel.Location = New-Object System.Drawing.Size(10,200)
-    $userLabel.Size = New-Object System.Drawing.Size(370,20)
+    $userLabel = New-Object System.Windows.Forms.Label 
+    $userLabel.Location = New-Object System.Drawing.Size(10,200) 
+    $userLabel.Size = New-Object System.Drawing.Size(370,20) 
     $userLabel.Text = $loginLabel
-    $userForm.Controls.Add($userLabel)
+    $userForm.Controls.Add($userLabel)  
 
-    $objTextBox2 = New-Object System.Windows.Forms.TextBox
-    $objTextBox2.Location = New-Object System.Drawing.Size(10,220)
-    $objTextBox2.Size = New-Object System.Drawing.Size(370,20)
+    $objTextBox2 = New-Object System.Windows.Forms.TextBox 
+    $objTextBox2.Location = New-Object System.Drawing.Size(10,220) 
+    $objTextBox2.Size = New-Object System.Drawing.Size(370,20) 
     $objTextBox2.Name = "loginField"
     if($userUPN.Length -gt 5 -and $userUPN.IndexOf("@") -ne -1){
         $objTextBox2.Text = $userUPN
     }else{
         $objTextBox2.Text = ""
     }
-    $userForm.Controls.Add($objTextBox2)
+    $userForm.Controls.Add($objTextBox2) 
 
-    $userLabel2 = New-Object System.Windows.Forms.Label
-    $userLabel2.Location = New-Object System.Drawing.Size(10,250)
-    $userLabel2.Size = New-Object System.Drawing.Size(370,20)
-    $userLabel2.Text = $passwordLabel
-    $userForm.Controls.Add($userLabel2)
+    $userLabel2 = New-Object System.Windows.Forms.Label 
+    $userLabel2.Location = New-Object System.Drawing.Size(10,250) 
+    $userLabel2.Size = New-Object System.Drawing.Size(370,20) 
+    $userLabel2.Text = $passwordLabel 
+    $userForm.Controls.Add($userLabel2)  
 
-    $objTextBox3 = New-Object System.Windows.Forms.TextBox
+    $objTextBox3 = New-Object System.Windows.Forms.TextBox 
     $objTextBox3.UseSystemPasswordChar = $True
-    $objTextBox3.Location = New-Object System.Drawing.Size(10,270)
-    $objTextBox3.Size = New-Object System.Drawing.Size(370,20)
+    $objTextBox3.Location = New-Object System.Drawing.Size(10,270) 
+    $objTextBox3.Size = New-Object System.Drawing.Size(370,20) 
     $objTextBox3.Text = ""
     $objTextBox3.Name = "passwordField"
-    $userForm.Controls.Add($objTextBox3)
+    $userForm.Controls.Add($objTextBox3) 
 
-    $userForm.Topmost = $True
-    $userForm.TopLevel = $True
-    $userForm.ShowIcon = $True
+    $userForm.Topmost = $True 
+    $userForm.TopLevel = $True 
+    $userForm.ShowIcon = $True 
     $userForm.Add_Shown({$userForm.Activate();
     if($userUPN.Length -gt 5 -and $userUPN.IndexOf("@") -ne -1){
         $objTextBox3.focus()
     }else{
         $objTextBox2.focus()
-    }})
-    $InitialFormWindowState = $userForm.WindowState
-    $userForm.add_Load($Form_StateCorrection_Load)
-    [void]$userForm.ShowDialog()
+    }}) 
+    $InitialFormWindowState = $userForm.WindowState 
+    $userForm.add_Load($Form_StateCorrection_Load) 
+    [void]$userForm.ShowDialog() 
 
     $objTextBox2.Text
     $objTextBox3.Text
@@ -1039,7 +995,7 @@ function checkIfAtO365URL{
 function lookupLoginFromAD{
     Param(
         [Switch]$lookupEmail #otherwise lookup UPN
-    )
+    ) 
     if($lookupEmail){
         try{
             $userMail = ([ADSISEARCHER]"samaccountname=$($env:USERNAME)").Findone().Properties.mail
@@ -1051,118 +1007,118 @@ function lookupLoginFromAD{
             Throw
         }
     }else{
-        try{
-            $objDomain = New-Object System.DirectoryServices.DirectoryEntry
-            $objSearcher = New-Object System.DirectoryServices.DirectorySearcher
-            $objSearcher.SearchRoot = $objDomain
+        try{ 
+            $objDomain = New-Object System.DirectoryServices.DirectoryEntry 
+            $objSearcher = New-Object System.DirectoryServices.DirectorySearcher 
+            $objSearcher.SearchRoot = $objDomain 
             $objSearcher.Filter = "(&(objectCategory=User)(SAMAccountName=$Env:USERNAME))"
             $objSearcher.SearchScope = "Subtree"
-            $objSearcher.PropertiesToLoad.Add("userprincipalname") | Out-Null
-            $results = $objSearcher.FindAll()
-            return $results[0].Properties.userprincipalname
-        }catch{
+            $objSearcher.PropertiesToLoad.Add("userprincipalname") | Out-Null 
+            $results = $objSearcher.FindAll() 
+            return $results[0].Properties.userprincipalname 
+        }catch{ 
             log -text "Failed to lookup username, active directory connection failed, please change userLookupMode" -fout
             $script:errorsForUser += "Could not connect to your corporate network.`n"
-            Throw
+            Throw 
         }
     }
 }
 
-function CustomInputBox(){
+function CustomInputBox(){ 
     Param(
         [String]$title,
         [String]$message,
         [Switch]$password
     )
-    if($forcePassword.Length -gt 2 -and $password) {
-        return $forcePassword
-    }
-    $objBalloon = New-Object System.Windows.Forms.NotifyIcon
-    $objBalloon.BalloonTipIcon = "Info"
-    $objBalloon.BalloonTipTitle = "OneDriveMapper"
-    $objBalloon.BalloonTipText = "OneDriveMapper - www.lieben.nu"
-    $objBalloon.Visible = $True
-    $objBalloon.ShowBalloonTip(10000)
-
-    $userForm = New-Object 'System.Windows.Forms.Form'
-    $InitialFormWindowState = New-Object 'System.Windows.Forms.FormWindowState'
-    $Form_StateCorrection_Load=
-    {
-        $userForm.WindowState = $InitialFormWindowState
-    }
-    $userForm.Text = "$title"
-    $userForm.Size = New-Object System.Drawing.Size(350,200)
-    $userForm.StartPosition = "CenterScreen"
-    $userForm.AutoSize = $False
-    $userForm.MinimizeBox = $False
-    $userForm.MaximizeBox = $False
-    $userForm.SizeGripStyle= "Hide"
-    $userForm.WindowState = "Normal"
-    $userForm.FormBorderStyle="Fixed3D"
-    $userForm.KeyPreview = $True
-    $userForm.Add_KeyDown({if ($_.KeyCode -eq "Enter"){$userForm.Close()}})
-    $OKButton = New-Object System.Windows.Forms.Button
-    $OKButton.Location = New-Object System.Drawing.Size(105,110)
-    $OKButton.Size = New-Object System.Drawing.Size(95,23)
-    $OKButton.Text = $buttonText
-    $OKButton.Add_Click({$userForm.Close()})
-    $userForm.Controls.Add($OKButton)
-    $userLabel = New-Object System.Windows.Forms.Label
-    $userLabel.Location = New-Object System.Drawing.Size(10,20)
-    $userLabel.Size = New-Object System.Drawing.Size(300,50)
-    $userLabel.Text = "$message"
-    $userForm.Controls.Add($userLabel)
-    $objTextBox = New-Object System.Windows.Forms.TextBox
+    if($forcePassword.Length -gt 2 -and $password) { 
+        return $forcePassword 
+    } 
+    $objBalloon = New-Object System.Windows.Forms.NotifyIcon  
+    $objBalloon.BalloonTipIcon = "Info" 
+    $objBalloon.BalloonTipTitle = "OneDriveMapper"  
+    $objBalloon.BalloonTipText = "OneDriveMapper - www.lieben.nu" 
+    $objBalloon.Visible = $True  
+    $objBalloon.ShowBalloonTip(10000) 
+ 
+    $userForm = New-Object 'System.Windows.Forms.Form' 
+    $InitialFormWindowState = New-Object 'System.Windows.Forms.FormWindowState' 
+    $Form_StateCorrection_Load= 
+    { 
+        $userForm.WindowState = $InitialFormWindowState 
+    }  
+    $userForm.Text = "$title" 
+    $userForm.Size = New-Object System.Drawing.Size(350,200) 
+    $userForm.StartPosition = "CenterScreen" 
+    $userForm.AutoSize = $False 
+    $userForm.MinimizeBox = $False 
+    $userForm.MaximizeBox = $False 
+    $userForm.SizeGripStyle= "Hide" 
+    $userForm.WindowState = "Normal" 
+    $userForm.FormBorderStyle="Fixed3D" 
+    $userForm.KeyPreview = $True 
+    $userForm.Add_KeyDown({if ($_.KeyCode -eq "Enter"){$userForm.Close()}})   
+    $OKButton = New-Object System.Windows.Forms.Button 
+    $OKButton.Location = New-Object System.Drawing.Size(105,110) 
+    $OKButton.Size = New-Object System.Drawing.Size(95,23) 
+    $OKButton.Text = $buttonText 
+    $OKButton.Add_Click({$userForm.Close()}) 
+    $userForm.Controls.Add($OKButton) 
+    $userLabel = New-Object System.Windows.Forms.Label 
+    $userLabel.Location = New-Object System.Drawing.Size(10,20) 
+    $userLabel.Size = New-Object System.Drawing.Size(300,50) 
+    $userLabel.Text = "$message" 
+    $userForm.Controls.Add($userLabel)  
+    $objTextBox = New-Object System.Windows.Forms.TextBox 
     if($password) {$objTextBox.UseSystemPasswordChar = $True }
-    $objTextBox.Location = New-Object System.Drawing.Size(70,75)
-    $objTextBox.Size = New-Object System.Drawing.Size(180,20)
-    $userForm.Controls.Add($objTextBox)
-    $userForm.Topmost = $True
-    $userForm.TopLevel = $True
-    $userForm.ShowIcon = $True
-    $userForm.Add_Shown({$userForm.Activate();$objTextBox.focus()})
-    $InitialFormWindowState = $userForm.WindowState
-    $userForm.add_Load($Form_StateCorrection_Load)
-    [void] $userForm.ShowDialog()
-    return $objTextBox.Text
-}
-
-function labelDrive{
-    Param(
-    [String]$lD_DriveLetter,
-    [String]$lD_MapURL,
-    [String]$lD_DriveLabel
-    )
-
-    #try to set the drive label
-    if($lD_DriveLabel.Length -gt 0){
+    $objTextBox.Location = New-Object System.Drawing.Size(70,75) 
+    $objTextBox.Size = New-Object System.Drawing.Size(180,20) 
+    $userForm.Controls.Add($objTextBox)  
+    $userForm.Topmost = $True 
+    $userForm.TopLevel = $True 
+    $userForm.ShowIcon = $True 
+    $userForm.Add_Shown({$userForm.Activate();$objTextBox.focus()}) 
+    $InitialFormWindowState = $userForm.WindowState 
+    $userForm.add_Load($Form_StateCorrection_Load) 
+    [void] $userForm.ShowDialog() 
+    return $objTextBox.Text 
+} 
+ 
+function labelDrive{ 
+    Param( 
+    [String]$lD_DriveLetter, 
+    [String]$lD_MapURL, 
+    [String]$lD_DriveLabel 
+    ) 
+ 
+    #try to set the drive label 
+    if($lD_DriveLabel.Length -gt 0){ 
         log -text "A drive label has been specified, attempting to set the label for $($lD_DriveLetter)"
-        try{
+        try{ 
             $regURL = $lD_MapURL.TrimEnd("\") -Replace [regex]::escape("\"),"#"
-            $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\MountPoints2\$($regURL)"
+            $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\MountPoints2\$($regURL)" 
             $Null = New-Item -Path $path -Force -ErrorAction SilentlyContinue
             $Null = New-ItemProperty -Path $path -Name "_CommentFromDesktopINI" -ErrorAction SilentlyContinue
             $Null = New-ItemProperty -Path $path -Name "_LabelFromDesktopINI" -ErrorAction SilentlyContinue
             $Null = New-ItemProperty -Path $path -Name "_LabelFromReg" -Value $lD_DriveLabel -ErrorAction SilentlyContinue
-            $regURL = $regURL -Replace [regex]::escape("DavWWWRoot#"),""
-            $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\MountPoints2\$($regURL)"
+            $regURL = $regURL -Replace [regex]::escape("DavWWWRoot#"),"" 
+            $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\MountPoints2\$($regURL)" 
             $Null = New-Item -Path $path -Force -ErrorAction SilentlyContinue
             $Null = New-ItemProperty -Path $path -Name "_CommentFromDesktopINI" -ErrorAction SilentlyContinue
             $Null = New-ItemProperty -Path $path -Name "_LabelFromDesktopINI" -ErrorAction SilentlyContinue
             $Null = New-ItemProperty -Path $path -Name "_LabelFromReg" -Value $lD_DriveLabel -ErrorAction SilentlyContinue
-            log -text "Label has been set to $($lD_DriveLabel)"
-
-        }catch{
+            log -text "Label has been set to $($lD_DriveLabel)" 
+ 
+        }catch{ 
             log -text "Failed to set the drive label registry keys: $($Error[0]) " -fout
-        }
-
-    }
-}
+        } 
+ 
+    } 
+} 
 
 function fixElevationVisibility{
     #check if a task already exists for this script
     if($showElevatedConsole){
-        $createTask = "schtasks /Create /SC ONCE /TN OnedriveMapper /IT /RL LIMITED /F /TR `"Powershell.exe -NoProfile -ExecutionPolicy ByPass -File '$scriptPath' -asTask`" /st 00:00"
+        $createTask = "schtasks /Create /SC ONCE /TN OnedriveMapper /IT /RL LIMITED /F /TR `"Powershell.exe -NoProfile -ExecutionPolicy ByPass -File '$scriptPath' -asTask`" /st 00:00"    
     }else{
         $createTask = "schtasks /Create /SC ONCE /TN OnedriveMapper /IT /RL LIMITED /F /TR `"Powershell.exe -NoProfile -ExecutionPolicy ByPass -WindowStyle Hidden -File '$scriptPath' -asTask`" /st 00:00"
     }
@@ -1181,13 +1137,13 @@ function fixElevationVisibility{
     }
 }
 
-function MapDrive{
-    Param(
+function MapDrive{ 
+    Param( 
         $driveMapping
     )
     if($driveMapping.targetLocationType -eq "driveletter"){
         $LASTEXITCODE = 0
-        log -text "Mapping target: $($driveMapping.webDavPath)"
+        log -text "Mapping target: $($driveMapping.webDavPath)" 
         try{$del = NET USE $($driveMapping.targetLocationPath) /DELETE /Y 2>&1}catch{$Null}
         if($persistentMapping){
             try{$out = NET USE $($driveMapping.targetLocationPath) $($driveMapping.webDavPath) /PERSISTENT:YES 2>&1}catch{$Null}
@@ -1200,19 +1156,19 @@ function MapDrive{
         if($out -like "*error 224*"){
             log -text "ERROR: detected string error 224 in return code of net use command, this usually means your trusted sites are misconfigured or KB2846960 is missing or Internet Explorer needs a reset" -fout
         }
-        if($LASTEXITCODE -ne 0){
+        if($LASTEXITCODE -ne 0){ 
             log -text "Failed to map $($driveMapping.targetLocationPath) to $($driveMapping.webDavPath), error: $($LASTEXITCODE) $($out) $del" -fout
             $script:errorsForUser += "$($driveMapping.targetLocationPath) could not be mapped because of error $($LASTEXITCODE) $($out) d$del`n"
-            return $False
-        }
-        if([System.IO.Directory]::Exists($driveMapping.targetLocationPath)){
-            #set drive label
+            return $False 
+        } 
+        if([System.IO.Directory]::Exists($driveMapping.targetLocationPath)){ 
+            #set drive label 
             $Null = labelDrive $($driveMapping.targetLocationPath) $($driveMapping.webDavPath) $($driveMapping.displayName)
-            log -text "$($driveMapping.targetLocationPath) mapped successfully`n"
-            return $True
-        }else{
+            log -text "$($driveMapping.targetLocationPath) mapped successfully`n" 
+            return $True 
+        }else{ 
             log -text "failed to contact $($driveMapping.targetLocationPath) after mapping it to $($driveMapping.webDavPath), check if the URL is valid. Error: $($error[0]) $out" -fout
-            return $False
+            return $False 
         }
     }else{
         try{
@@ -1229,24 +1185,24 @@ function MapDrive{
             log -text "failed to add network location: $($Error[0])" -fout
         }
     }
-}
-
-function revertProtectedMode(){
-    log -text "autoProtectedMode is set to True, reverting to old settings"
-    try{
-        for($i=0; $i -lt 5; $i++){
-            if($protectedModeValues[$i] -ne $Null){
-                log -text "Setting zone $i back to $($protectedModeValues[$i])"
-                Set-ItemProperty -Path "$($BaseKeypath)\$($i)\" -Name "2500"  -Value $protectedModeValues[$i] -Type Dword -ErrorAction SilentlyContinue
-            }
-        }
-    }
-    catch{
+} 
+ 
+function revertProtectedMode(){ 
+    log -text "autoProtectedMode is set to True, reverting to old settings" 
+    try{ 
+        for($i=0; $i -lt 5; $i++){ 
+            if($protectedModeValues[$i] -ne $Null){ 
+                log -text "Setting zone $i back to $($protectedModeValues[$i])" 
+                Set-ItemProperty -Path "$($BaseKeypath)\$($i)\" -Name "2500"  -Value $protectedModeValues[$i] -Type Dword -ErrorAction SilentlyContinue 
+            } 
+        } 
+    } 
+    catch{ 
         log -text "Failed to modify registry keys to change ProtectedMode back to the original settings: $($Error[0])" -fout
-    }
-}
+    } 
+} 
 
-function abort_OM{
+function abort_OM{ 
     if($showProgressBar) {
         $progressbar1.Value = 100
         $label1.text="Done!"
@@ -1266,57 +1222,57 @@ function abort_OM{
           {
             $del = $ShellWindows.Item($i)
             try{
-                $Null = [System.Runtime.Interopservices.Marshal]::ReleaseComObject($del)  2>&1
+                $Null = [System.Runtime.Interopservices.Marshal]::ReleaseComObject($del)  2>&1 
             }catch{}
           }
         }
         try{
-            $Null = [System.Runtime.Interopservices.Marshal]::ReleaseComObject($shellapp)
+            $Null = [System.Runtime.Interopservices.Marshal]::ReleaseComObject($shellapp) 
         }catch{}
-        if($autoProtectedMode){
-            revertProtectedMode
-        }
+        if($autoProtectedMode){ 
+            revertProtectedMode 
+        } 
     }
-    if($restartExplorer){
-        restart_explorer
-    }else{
-        log -text "restartExplorer is set to False, if you're redirecting folders they may not show up" -warning
-    }
+    if($restartExplorer){ 
+        restart_explorer 
+    }else{ 
+        log -text "restartExplorer is set to False, if you're redirecting folders they may not show up" -warning 
+    }     
     handleAzureADConnectSSO
     log -text "OnedriveMapper has finished running"
     if($urlOpenAfter.Length -gt 10){Start-Process iexplore.exe $urlOpenAfter}
     if($displayErrors){
-        if($errorsForUser){
-            $OUTPUT= [System.Windows.Forms.MessageBox]::Show($errorsForUser, "Onedrivemapper Error" , 0)
-            $OUTPUT2= [System.Windows.Forms.MessageBox]::Show("You can always use https://portal.office.com to access your data", "Need a workaround?" , 0)
+        if($errorsForUser){ 
+            $OUTPUT= [System.Windows.Forms.MessageBox]::Show($errorsForUser, "Onedrivemapper Error" , 0) 
+            $OUTPUT2= [System.Windows.Forms.MessageBox]::Show("You can always use https://portal.office.com to access your data", "Need a workaround?" , 0) 
         }
     }
-    Exit
-}
-
+    Exit 
+} 
+ 
 function askForPassword{
     $askAttempts = 0
-    do{
-        $askAttempts++
-        log -text "asking user for password"
-        try{
+    do{ 
+        $askAttempts++ 
+        log -text "asking user for password" 
+        try{ 
             $password = CustomInputBox $loginformTitleText $passwordFieldText -password
-        }catch{
+        }catch{ 
             log -text "failed to display a password input box, exiting. $($Error[0])" -fout
-            abort_OM
-        }
-    }
-    until($password.Length -gt 0 -or $askAttempts -gt 2)
-    if($askAttempts -gt 2) {
+            abort_OM              
+        } 
+    } 
+    until($password.Length -gt 0 -or $askAttempts -gt 2) 
+    if($askAttempts -gt 2) { 
         log -text "user refused to enter a password, exiting" -fout
         $script:errorsForUser += "You did not enter a password, we will not be able to connect to Onedrive`n"
-        abort_OM
-    }else{
-        return $password
+        abort_OM 
+    }else{ 
+        return $password 
     }
 }
 
-function retrievePassword{
+function retrievePassword{ 
     Param(
         [switch]$forceNewPassword,
         [String]$cachePassword,
@@ -1335,7 +1291,7 @@ function retrievePassword{
             }catch{
                 log -text "Error storing user password to user password cache file ($($Error[0] | out-string)" -fout
             }
-        }
+        }    
         return $password
     }
     if($pwdCache -and $cachePassword.Length -le 0){
@@ -1365,31 +1321,31 @@ function retrievePassword{
         }
     }
     return $password
-}
-
-function askForUserName{
+} 
+ 
+function askForUserName{ 
     $askAttempts = 0
-    do{
-        $askAttempts++
-        log -text "asking user for login"
-        try{
+    do{ 
+        $askAttempts++ 
+        log -text "asking user for login" 
+        try{ 
             $login = CustomInputBox $loginformTitleText $loginFieldText
-        }catch{
+        }catch{ 
             log -text "failed to display a login input box, exiting $($Error[0])" -fout
-            abort_OM
-        }
-    }
-    until($login.Length -gt 0 -or $askAttempts -gt 2)
-    if($askAttempts -gt 2) {
+            abort_OM              
+        } 
+    } 
+    until($login.Length -gt 0 -or $askAttempts -gt 2) 
+    if($askAttempts -gt 2) { 
         log -text "user refused to enter a login name, exiting" -fout
         $script:errorsForUser += "You did not enter a login name, script cannot continue`n"
-        abort_OM
-    }else{
-        return $login
-    }
+        abort_OM 
+    }else{ 
+        return $login 
+    } 
 }
 
-function retrieveLogin{
+function retrieveLogin{ 
     Param(
         [switch]$forceNewLogin,
         [string]$cacheLogin,
@@ -1437,7 +1393,7 @@ function retrieveLogin{
         }
     }
     return [String]$login.ToLower()
-}
+} 
 
 
 
@@ -1468,26 +1424,26 @@ function setCookies{
     }
 }
 
-function askForCode{
+function askForCode{ 
     $askAttempts = 0
-    do{
-        $askAttempts++
-        log -text "asking user for SMS or App code"
-        try{
+    do{ 
+        $askAttempts++ 
+        log -text "asking user for SMS or App code" 
+        try{ 
             $login = CustomInputBox "Microsoft Office 365 OneDrive" "Please enter the SMS or Authenticator App code you have received on your cellphone"
-        }catch{
+        }catch{ 
             log -text "failed to display a code input box, exiting $($Error[0])" -fout
-            abort_OM
-        }
-    }
-    until($login.Length -gt 0 -or $askAttempts -gt 2)
-    if($askAttempts -gt 2) {
+            abort_OM              
+        } 
+    } 
+    until($login.Length -gt 0 -or $askAttempts -gt 2) 
+    if($askAttempts -gt 2) { 
         log -text "user refused to enter an SMS code, exiting" -fout
         $script:errorsForUser += "You did not enter an SMS code, script cannot continue`n"
-        abort_OM
-    }else{
-        return $login
-    }
+        abort_OM 
+    }else{ 
+        return $login 
+    } 
 }
 
 function checkIfAtFhmPage{
@@ -1502,7 +1458,7 @@ function checkIfAtFhmPage{
     }else{
         $body = "t=$value"
         try{
-            $res = JosL-WebRequest -url $nextURL -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri -contentType "application/x-www-form-urlencoded" -accept "text/html, application/xhtml+xml, image/jxr, */*"
+            $res = New-WebRequest -url $nextURL -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri -contentType "application/x-www-form-urlencoded" -accept "text/html, application/xhtml+xml, image/jxr, */*"       
             $value = returnEnclosedFormValue -res $res -searchString "<input type=`"hidden`" name=`"t`" id=`"t`" value=`""
             if($value -ne -1){
                 return $res
@@ -1514,39 +1470,39 @@ function checkIfAtFhmPage{
         }
     }
 }
-function Get-ProcessWithOwner {
-    param(
-        [parameter(mandatory=$true,position=0)]$ProcessName
-    )
-    $ComputerName=$env:COMPUTERNAME
-    $UserName=$env:USERNAME
-    $PSStandardMembers = [System.Management.Automation.PSMemberInfo[]]@($(New-Object System.Management.Automation.PSPropertySet('DefaultDisplayPropertySet',[string[]]$('ProcessName','UserName','Domain','ComputerName','handle'))))
-    try {
-        $Processes = Get-wmiobject -Class Win32_Process -ComputerName $ComputerName -Filter "name LIKE '$ProcessName%'"
-    } catch {
-        return -1
-    }
-    if ($Processes -ne $null) {
-        $OwnedProcesses = @()
-        foreach ($Process in $Processes) {
-            if($Process.GetOwner().User -eq $UserName){
-                $Process |
-                Add-Member -MemberType NoteProperty -Name 'Domain' -Value $($Process.getowner().domain)
-                $Process |
-                Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $ComputerName
-                $Process |
-                Add-Member -MemberType NoteProperty -Name 'UserName' -Value $($Process.GetOwner().User)
-                $Process |
-                Add-Member -MemberType MemberSet -Name PSStandardMembers -Value $PSStandardMembers
-                $OwnedProcesses += $Process
-            }
-        }
-        return $OwnedProcesses
-    } else {
-        return 0
-    }
-
-}
+function Get-ProcessWithOwner { 
+    param( 
+        [parameter(mandatory=$true,position=0)]$ProcessName 
+    ) 
+    $ComputerName=$env:COMPUTERNAME 
+    $UserName=$env:USERNAME 
+    $PSStandardMembers = [System.Management.Automation.PSMemberInfo[]]@($(New-Object System.Management.Automation.PSPropertySet('DefaultDisplayPropertySet',[string[]]$('ProcessName','UserName','Domain','ComputerName','handle')))) 
+    try { 
+        $Processes = Get-wmiobject -Class Win32_Process -ComputerName $ComputerName -Filter "name LIKE '$ProcessName%'" 
+    } catch { 
+        return -1 
+    } 
+    if ($Processes -ne $null) { 
+        $OwnedProcesses = @() 
+        foreach ($Process in $Processes) { 
+            if($Process.GetOwner().User -eq $UserName){ 
+                $Process |  
+                Add-Member -MemberType NoteProperty -Name 'Domain' -Value $($Process.getowner().domain) 
+                $Process | 
+                Add-Member -MemberType NoteProperty -Name 'ComputerName' -Value $ComputerName  
+                $Process | 
+                Add-Member -MemberType NoteProperty -Name 'UserName' -Value $($Process.GetOwner().User)  
+                $Process |  
+                Add-Member -MemberType MemberSet -Name PSStandardMembers -Value $PSStandardMembers 
+                $OwnedProcesses += $Process 
+            } 
+        } 
+        return $OwnedProcesses 
+    } else { 
+        return 0 
+    } 
+ 
+} 
 #endregion
 
 function waitForIE{
@@ -1560,17 +1516,17 @@ function checkIfMFASetupIsRequired{
         #two factor was required but not yet set up
         log -text "Failed to log in at $($script:ie.LocationURL) because you have not set up two factor authentication methods while you are required to." -fout
         $script:errorsForUser += "Cannot continue: you have not yet set up two-factor authentication at portal.office.com"
-        abort_OM
-    }catch{$Null}
+        abort_OM 
+    }catch{$Null}    
 }
 
 function checkIfCOMObjectIsHealthy{
-    #check if the COM object is healthy, otherwise we're running into issues
-    if($script:ie.HWND -eq $null){
+    #check if the COM object is healthy, otherwise we're running into issues 
+    if($script:ie.HWND -eq $null){ 
         log -text "ERROR: the browser object was Nulled during login, this means IE ProtectedMode or other security settings are blocking the script, check if you have correctly configure Trusted Sites." -fout
         $script:errorsForUser += "Mapping cannot continue because we could not log in to Office 365`n"
-        abort_OM
-    }
+        abort_OM 
+    } 
 }
 
 #Returns True if there was an error (and logs the error), returns False if no error was detected
@@ -1594,7 +1550,7 @@ function checkErrorAtLoginValue{
                     log -text "Detected an error at $($ie.LocationURL): invalidUsernameOrPassword" -fout
                     $script:errorsForUser += "The password or login you're trying to use is invalid`n"
                 }
-                default{
+                default{                
                     log -text "Detected an error at $($ie.LocationURL): $found_ErrorControl" -fout
                     $script:errorsForUser += "Office365 reported an error: $found_ErrorControl`n"
                 }
@@ -1617,58 +1573,76 @@ function handleO365Redirect{
     Param(
         $res
     )
+
     $redirectFollowed = $False
     $nextURL = returnEnclosedFormValue -res $res -searchString "form method=`"POST`" name=`"hiddenform`" action=`""
     $nextURL = [System.Web.HttpUtility]::HtmlDecode($nextURL)
     $code = returnEnclosedFormValue -res $res -searchString "<input type=`"hidden`" name=`"code`" value=`""
     $id_token = returnEnclosedFormValue -res $res -searchString "<input type=`"hidden`" name=`"id_token`" value=`""
-    $state = returnEnclosedFormValue -res $res -searchString "<input type=`"hidden`" name=`"state`" value=`""
     $session_state = returnEnclosedFormValue -res $res -searchString "<input type=`"hidden`" name=`"session_state`" value=`""
-    if($nextURL -ne -1 -and $id_token -ne -1){
-        log -text "Detected a id_token redirect to Office.com, following..."
+    if($nextURL -like "*sharepoint.com*"){
+        $correlation_id = returnEnclosedFormValue -res $res -searchString "<input type=`"hidden`" name=`"correlation_id`" value=`""
+        $body = "code=$([System.Web.HttpUtility]::UrlEncode($code))&id_token=$([System.Web.HttpUtility]::UrlEncode($id_token))&correlation_id=$([System.Web.HttpUtility]::UrlEncode($correlation_id))&session_state=$([System.Web.HttpUtility]::UrlEncode($session_state))"
+    }else{
+        $state = returnEnclosedFormValue -res $res -searchString "<input type=`"hidden`" name=`"state`" value=`""
         $body = "code=$([System.Web.HttpUtility]::UrlEncode($code))&id_token=$([System.Web.HttpUtility]::UrlEncode($id_token))&state=$([System.Web.HttpUtility]::UrlEncode($state))&session_state=$([System.Web.HttpUtility]::UrlEncode($session_state))"
+    }
+       
+    if($nextURL -ne -1 -and $id_token -ne -1){
+        log -text "Detected a id_token redirect, following..."
         try{
-            $res = JosL-WebRequest -url $nextURL -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri -contentType "application/x-www-form-urlencoded" -accept "text/html, application/xhtml+xml, image/jxr, */*"
+            $res = New-WebRequest -url $nextURL -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri -contentType "application/x-www-form-urlencoded" -accept "text/html, application/xhtml+xml, image/jxr, */*"  
             $redirectFollowed=$True
         }catch{
             log -text "Error detected while following id_token redirect, check the FAQ for help" -fout
-            Throw "Failed to follow redirect"
+            Throw "Failed to follow id_token redirect"           
         }
-    }
+    }     
     $nextURL = returnEnclosedFormValue -res $res -searchString "form name=`"fmHF`" id=`"fmHF`" action=`"" -decode
     $nextURL = [System.Web.HttpUtility]::HtmlDecode($nextURL)
     $value = returnEnclosedFormValue -res $res -searchString "<input type=`"hidden`" name=`"t`" id=`"t`" value=`""
     if($value -ne -1){
-        $body = "t=$value"
+        $body = "t=$value"                
         log -text "Detected fmHF redirect, following"
         try{
-            $res = JosL-WebRequest -url $nextURL -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri -contentType "application/x-www-form-urlencoded" -accept "text/html, application/xhtml+xml, image/jxr, */*"
+            $res = New-WebRequest -url $nextURL -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri -contentType "application/x-www-form-urlencoded" -accept "text/html, application/xhtml+xml, image/jxr, */*"       
             $redirectFollowed=$True
         }catch{
             log -text "Error detected while following fmHF redirect, check the FAQ for help" -fout
-            Throw
-        }
-    }
-    return $res,$redirectFollowed
+            Throw "Failed to follow fmHF redirect" 
+        }    
+    }    
+
+    $nextURL = returnEnclosedFormValue -res $res -searchString "form method=`"POST`" name=`"hiddenform`" action=`""
+    $nextURL = [System.Web.HttpUtility]::HtmlDecode($nextURL)
+    $ctx = returnEnclosedFormValue -res $res -searchString "<input type=`"hidden`" name=`"ctx`" value=`""
+    $flowtoken = returnEnclosedFormValue -res $res -searchString "<input type=`"hidden`" name=`"flowtoken`" value=`""
+    if($ctx -ne -1){
+        $body = "ctx=$([System.Web.HttpUtility]::UrlEncode($ctx))&flowtoken=$([System.Web.HttpUtility]::UrlEncode($flowtoken))"                
+        log -text "Detected DeviceAuth redirect, following"
+        try{
+            $res = New-WebRequest -url $nextURL -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri -contentType "application/x-www-form-urlencoded" -accept "text/html, application/xhtml+xml, image/jxr, */*"       
+            $redirectFollowed=$True
+        }catch{
+            log -text "Error detected while following DeviceAuth redirect, check the FAQ for help" -fout
+            Throw "Failed to follow DeviceAuth redirect" 
+        }    
+    }   
+
+    return $res,$redirectFollowed     
 }
 function loginV2(){
-    Param(
-        $tryAgainRes
-    )
     $script:cookiejar = New-Object System.Net.CookieContainer
     log -text "Login attempt using native method at tenant $O365CustomerName"
     $uidEnc = [System.Web.HttpUtility]::UrlEncode($userUPN)
     #stel allereerste cookie in om websessie te beginnen
     try{
         if($adfsSmartLink){
-            $res = JosL-WebRequest -url $adfsSmartLink -Method Get
+            log -text "Using ADFS Smartlink"
+            $res = New-WebRequest -url $adfsSmartLink -Method Get
             $mode = "Federated"
         }else{
-            if(!$tryAgainRes) {
-                $res = JosL-WebRequest -url https://login.microsoftonline.com -Method Get
-            }else{
-                $res = $tryAgainRes
-            }
+            $res = New-WebRequest -url https://login.microsoftonline.com -Method Get
             $stsRequest = returnEnclosedFormValue -res $res -searchString "<input type=`"hidden`" name=`"ctx`" value=`""
             if($stsRequest -eq -1){ #we're seeing a new forward method, so we should find the login URL Microsoft suggests
                 log -text "no STS request detected in response, checking for urlLogin parameter..."
@@ -1676,7 +1650,7 @@ function loginV2(){
                 try{
                     if($urlLogin.StartsWith("https://")){
                         log -text "urlLogin parameter found, following once...."
-                        $res = JosL-WebRequest -url $urlLogin -Method GET
+                        $res = New-WebRequest -url $urlLogin -Method GET            
                     }
                 }catch{$Null}
             }
@@ -1695,13 +1669,13 @@ function loginV2(){
             #this is the new realm discovery endpoint:
             $customHeaders = @{"canary" = $apiCanary;"hpgid" = "1104";"hpgact" = "1800";"client-request-id"=$clientId}
             $JSON = @{"username"="$userUPN";"isOtherIdpSupported"=$true;"checkPhones"=$false;"isRemoteNGCSupported"=$false;"isCookieBannerShown"=$false;"isFidoSupported"=$false;"originalRequest"="$cstsRequest"}
-            $JSON = ConvertTo-Json20 -item $JSON
+            $JSON = ConvertTo-Json $JSON
             try{
-                $res = JosL-WebRequest -url "https://login.microsoftonline.com/common/GetCredentialType" -Method POST -body $JSON -customHeaders $customHeaders -referer $res.rawResponse.ResponseUri.AbsoluteUri
+                $res = New-WebRequest -url "https://login.microsoftonline.com/common/GetCredentialType" -Method POST -body $JSON -customHeaders $customHeaders -referer $res.rawResponse.ResponseUri.AbsoluteUri
                 log -text "New realm discovery method succeeded"
             }catch{
                 log -text "New realm discovery method failed" -warning
-                $res = JosL-WebRequest -url "https://login.microsoftonline.com/common/userrealm?user=$uidEnc&api-version=2.1&stsRequest=$stsRequest&checkForMicrosoftAccount=false" -Method GET
+                $res = New-WebRequest -url "https://login.microsoftonline.com/common/userrealm?user=$uidEnc&api-version=2.1&stsRequest=$stsRequest&checkForMicrosoftAccount=false" -Method GET
                 log -text "Old realm discovery method succeeded"
             }
         }
@@ -1731,13 +1705,13 @@ function loginV2(){
                 $azureADSSOEnabled = $True
                 log -text "Additionally, Azure AD SSO and/or PassThrough is enabled for your tenant"
             }
-            $nextURL = "https://login.microsoftonline.com/common/login"
+            $nextURL = "https://login.microsoftonline.com/common/login"            
         }else{
             $mode = "New_Managed"
             log -text "Received API response for authentication method: Managed, new style"
             if($jsonRealmConfig.EstsProperties.DesktopSsoEnabled){
                 $azureADSSOEnabled = $True
-                log -text "Additionally, Azure AD SSO and/or PassThrough is enabled for your tenant"
+                log -text "Additionally, Azure AD SSO and/or PassThrough is enabled for your tenant"                
             }
         }
     }
@@ -1749,7 +1723,7 @@ function loginV2(){
             $nextURL2 = "https://autologon.microsoftazuread-sso.com/$($userUPN.Split("@")[1])/winauth/sso?desktopsso=true&isAdalRequest=False&client-request-id=$clientId"
             log -text "Authentication target: $nextURL2"
             try{
-                $res = JosL-WebRequest -url $nextURL2 -trySSO 1 -method GET -accept "text/html, application/xhtml+xml, image/jxr, */*" -referer "https://login.microsoftonline.com/"
+                $res = New-WebRequest -url $nextURL2 -trySSO 1 -method GET -accept "text/html, application/xhtml+xml, image/jxr, */*" -referer "https://login.microsoftonline.com/" 
                 log -text "Azure AD SSO response received: $($res.Content)"
                 $ssoToken = $res.Content
             }catch{
@@ -1758,9 +1732,9 @@ function loginV2(){
             $nextURL2 = "https://login.microsoftonline.com/common/instrumentation/dssostatus"
             $customHeaders = @{"canary" = $apiCanary;"hpgid" = "1104";"hpgact" = "1800";"client-request-id"=$clientId}
             $JSON = @{"resultCode"="0";"ssoDelay"="200";"log"=$Null}
-            $JSON = ConvertTo-Json20 -item $JSON
-            $res = JosL-WebRequest -url $nextURL2 -method POST -body $JSON -customHeaders $customHeaders
-            $JSON = ConvertFrom-Json20 -item $res.Content
+            $JSON = ConvertTo-Json $JSON
+            $res = New-WebRequest -url $nextURL2 -method POST -body $JSON -customHeaders $customHeaders
+            $JSON = ConvertFrom-Json $res.Content
             if($JSON.apiCanary){
                 log -text "AADC SSO step 1 completed"
             }else{
@@ -1793,7 +1767,7 @@ function loginV2(){
                     $body = "i13=0&login=$userUPN&loginfmt=$userUPN&type=11&LoginOptions=3&passwd=$passwordEnc&ps=2&canary=$newCanary&ctx=$cstsRequest&flowToken=$sFT&NewUser=1&fspost=0&i21=0&CookieDisclosure=0&i2=1&i19=41303"
                 }
                 log -text "authenticating using new managed mode as $userUPN"
-                $res = JosL-WebRequest -url "https://login.microsoftonline.com/common/login" -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri
+                $res = New-WebRequest -url "https://login.microsoftonline.com/common/login" -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri        
             }catch{
                 log -text "error received while posting to login page" -fout
             }
@@ -1820,10 +1794,16 @@ function loginV2(){
                     $body = "LoginOptions=1&ctx=$cstsRequest&flowToken=$sFT&canary=$newCanary&DontShowAgain=true&i19=2759"
                     try{
                         log -text "sending cookie persistence request"
-                        $res = JosL-WebRequest -url "https://login.microsoftonline.com/kmsi" -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri
+                        $res = New-WebRequest -url "https://login.microsoftonline.com/kmsi" -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri        
                     }catch{$Null}
                 }
             }
+
+            if($res.rawResponse.ResponseUri.AbsoluteUri.StartsWith("https://device.login.microsoftonline.com")){
+                log -text "Deviceauth encountered, breaking auth loop"
+                break
+            }
+
             $code = returnEnclosedFormValue -res $res -searchString "<input type=`"hidden`" name=`"code`" value=`""
             if($res.rawResponse.ResponseUri.AbsoluteUri.StartsWith("https://login.microsoftonline.com") -and $code -ne -1){
                 #we reached a landing page, but there is a redirect left, which is handled later in this script
@@ -1844,7 +1824,7 @@ function loginV2(){
             $nextURL2 = "https://autologon.microsoftazuread-sso.com/$($jsonRealmConfig.DomainName)/winauth/sso?desktopsso=true&isAdalRequest=False&client-request-id=$clientId"
             log -text "Authentication target: $nextURL2"
             try{
-                $res = JosL-WebRequest -url $nextURL2 -trySSO 1 -method GET -accept "text/html, application/xhtml+xml, image/jxr, */*" -referer "https://login.microsoftonline.com/"
+                $res = New-WebRequest -url $nextURL2 -trySSO 1 -method GET -accept "text/html, application/xhtml+xml, image/jxr, */*" -referer "https://login.microsoftonline.com/" 
                 log -text "Azure AD SSO response received: $($res.Content)"
                 $ssoToken = $res.Content
             }catch{
@@ -1853,9 +1833,9 @@ function loginV2(){
             $nextURL2 = "https://login.microsoftonline.com/common/instrumentation/dssostatus"
             $customHeaders = @{"canary" = $apiCanary;"hpgid" = "1002";"hpgact" = "2101";"client-request-id"=$clientId}
             $JSON = @{"resultCode"="107";"ssoDelay"="200";"log"=$Null}
-            $JSON = ConvertTo-Json20 -item $JSON
-            $res = JosL-WebRequest -url $nextURL2 -method POST -body $JSON -customHeaders $customHeaders
-            $JSON = ConvertFrom-Json20 -item $res.Content
+            $JSON = ConvertTo-Json $JSON
+            $res = New-WebRequest -url $nextURL2 -method POST -body $JSON -customHeaders $customHeaders
+            $JSON = ConvertFrom-Json $res.Content
             if($JSON.apiCanary){
                 log -text "AADC SSO step 1 completed"
             }else{
@@ -1892,7 +1872,7 @@ function loginV2(){
             }
             log -text "Requesting session..."
             try{
-                $res = JosL-WebRequest -url $nextURL -Method POST -body $body
+                $res = New-WebRequest -url $nextURL -Method POST -body $body
             }catch{
                 log -text "failure at logon attempt: $($Error[0])" -fout
                 continue
@@ -1926,28 +1906,28 @@ function loginV2(){
                         Throw "No flowToken found in response"
                     }else{
                         log -text "New flowToken retrieved"
-                    }
+                    }                    
                     $canary = returnEnclosedFormValue -res $res -searchString "<input type=`"hidden`" name=`"canary`" value=`""
                     if($canary -eq -1){
                         Throw "No canary found in response"
                     }else{
                         log -text "New canary retrieved"
-                    }
+                    } 
                     $apiCanary = returnEnclosedFormValue -res $res -searchString "`"apiCanary`":`""
                     if($apiCanary -eq -1){
                         Throw "No apiCanary found in response"
                     }else{
                         log -text "New apiCanary retrieved"
-                    }
+                    }  
                     $customHeaders = @{"canary" = $apiCanary;"hpgid" = "1002";"hpgact" = "2000";"client-request-id"=$clientId}
                     $nextURL = "https://login.microsoftonline.com/common/onpremvalidation/Poll"
                     $JSON = @{"flowToken"=$flowToken;"ctx"=$stsRequest}
-                    $JSON = ConvertTo-Json20 -item $JSON
-                    $res = JosL-WebRequest -url $nextURL -Method POST -body $JSON -customHeaders $customHeaders
-                    $response = ConvertFrom-Json20 -item $res.Content
+                    $JSON = ConvertTo-Json $JSON
+                    $res = New-WebRequest -url $nextURL -Method POST -body $JSON -customHeaders $customHeaders
+                    $response = ConvertFrom-Json $res.Content
                     $body = "flowToken=$($response.flowToken)&ctx=$stsRequest"
                     $nextURL =  "https://login.microsoftonline.com/common/onpremvalidation/End"
-                    $res = JosL-WebRequest -url $nextURL -Method POST -body $body
+                    $res = New-WebRequest -url $nextURL -Method POST -body $body
                     log -text "AADC SSO step 2 completed"
                 }catch{
                     log -text "Error trying to request AzureAD SSO token: $($Error[0])" -fout
@@ -1961,7 +1941,7 @@ function loginV2(){
                     log -text "We do not seem to have been properly redirected for SSO yet" -warning
                 }
                 try{
-                    $JSON = ConvertFrom-Json20 -item $res.Content
+                    $JSON = ConvertFrom-Json $res.Content
                     if($JSON.error.message -eq "AADSTS50012"){
                         log -text "Your password was incorrect according to AADC SSO" -fout
                     }elseif($JSON.error){
@@ -1979,7 +1959,7 @@ function loginV2(){
         log -text "Contacting Federation server and attempting Single SignOn..."
         if(!$adfsSmartLink){
             try{
-                $res = JosL-WebRequest -url $nextURL -Method GET -referer $res.rawResponse.ResponseUri.AbsoluteUri
+                $res = New-WebRequest -url $nextURL -Method GET -referer $res.rawResponse.ResponseUri.AbsoluteUri
             }catch{
                 log -text "Error received from ADFS server: $($Error[0])" -fout
                 return $False
@@ -1996,12 +1976,12 @@ function loginV2(){
             $RelayState = returnEnclosedFormValue -res $res -searchString "<input type=`"hidden`" name=`"RelayState`" value=`""
             $body = "SAMLRequest=$SAMLRequest&RelayState=$RelayState"
             try{
-                $res = JosL-WebRequest -url $nextURL -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri
+                $res = New-WebRequest -url $nextURL -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri
             }catch{
                 log -text "Error received from F5 server: $($Error[0])" -fout
                 return $False
             }
-            $nextURL = returnEnclosedFormValue -res $res -searchString "<form method=`"POST`" action=`""
+            $nextURL = returnEnclosedFormValue -res $res -searchString "<form method=`"POST`" action=`""        
             $nextURL = "https://$($res.rawResponse.ResponseUri.Host)$nextURL"
             $dummy = returnEnclosedFormValue -res $res -searchString "<input type=`"hidden`" name=`"dummy`" value=`""
             $body = "dummy=$dummy"
@@ -2011,7 +1991,7 @@ function loginV2(){
                 }else{
                     log -text "Retrieved forward code from F5 server, forwarding to $nextURL"
                 }
-                $res = JosL-WebRequest -url $nextURL -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri
+                $res = New-WebRequest -url $nextURL -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri
             }catch{
                 log -text "Error received from F5 server: $($Error[0])" -fout
             }
@@ -2027,8 +2007,8 @@ function loginV2(){
                     log -text "SAML response retrieved from F5, sending to endpoint..."
                 }else{
                     Throw "No (readable) SAML response retrieved from F5! Use Fiddler to debug"
-                }
-                $res = JosL-WebRequest -url $nextURL -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri
+                }               
+                $res = New-WebRequest -url $nextURL -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri
             }catch{
                 log -text "Error received when getting SAML response from F5 server, script will likely fail: $($Error[0])" -fout
             }
@@ -2064,8 +2044,15 @@ function loginV2(){
                         break
                     }
                 }
-                $body = "UserName=$userName&Password=$passwordEnc&Kmsi=true&AuthMethod=FormsAuthentication"
-                $res = JosL-WebRequest -url $nextURL -Method POST -body $body
+                #handle ESET plugin
+                if($res.Content.IndexOf("esa_message_push") -ne -1){
+                    $nextURL = returnEnclosedFormValue -res $res -searchString "<form id=`"options`"  method=`"post`" action=`""
+                    $context = returnEnclosedFormValue -res $res -searchString "<input id=`"context`" type=`"hidden`" name=`"Context`" value=`""
+                    $body = "AuthMethod=esa_adfs_adapter&Context=$context&submit_auto="
+                }else{
+                    $body = "UserName=$userName&Password=$passwordEnc&Kmsi=true&AuthMethod=FormsAuthentication"
+                }
+                $res = New-WebRequest -url $nextURL -Method POST -body $body
                 $attempts++
             }
 
@@ -2074,8 +2061,8 @@ function loginV2(){
         $wResult = [System.Web.HttpUtility]::HtmlDecode($wResult)
         $wResult = [System.Web.HttpUtility]::UrlEncode($wResult)
         $body = "wa=wsignin1.0&wresult=$wResult&amp;LoginOptions=1"
-        $res = JosL-WebRequest -url $nextURL -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri -contentType "application/x-www-form-urlencoded" -accept "text/html, application/xhtml+xml, image/jxr, */*"
-
+        $res = New-WebRequest -url $nextURL -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri -contentType "application/x-www-form-urlencoded" -accept "text/html, application/xhtml+xml, image/jxr, */*"
+        
         #check for double redirect which will happen if ADFS is itself federated
         $wResult = returnEnclosedFormValue -res $res -searchString "<input type=`"hidden`" name=`"wresult`" value=`""
 		if($wResult -ne -1){
@@ -2084,7 +2071,7 @@ function loginV2(){
 			$wResult = [System.Web.HttpUtility]::HtmlDecode($wResult)
 			$wResult = [System.Web.HttpUtility]::UrlEncode($wResult)
 			$body = "wa=wsignin1.0&wresult=$wResult&amp;LoginOptions=1"
-			$res = JosL-WebRequest -url $nextURL -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri -contentType "application/x-www-form-urlencoded" -accept "text/html, application/xhtml+xml, image/jxr, */*"
+			$res = New-WebRequest -url $nextURL -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri -contentType "application/x-www-form-urlencoded" -accept "text/html, application/xhtml+xml, image/jxr, */*" 
 		}
 
         if($res.Content.IndexOf("<meta name=`"PageID`" content=`"KmsiInterrupt`"") -ne -1){
@@ -2099,13 +2086,13 @@ function loginV2(){
             $body = "LoginOptions=1&ctx=$cstsRequest&flowToken=$sFT&canary=$newCanary&DontShowAgain=true&i19=2759"
             try{
                 log -text "sending cookie persistence request"
-                $res = JosL-WebRequest -url "https://login.microsoftonline.com/kmsi" -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri
+                $res = New-WebRequest -url "https://login.microsoftonline.com/kmsi" -Method POST -body $body -referer $res.rawResponse.ResponseUri.AbsoluteUri        
             }catch{$Null}
         }
 
     }
 
-    ##AT this point, authentication should have succeeded, but redirects need to be followed an may differ per type of tenant
+    ##AT this point, authentication should have succeeded, but redirects need to be followed and may differ per type of tenant
 
     #some customers have a redirect active to Onedrive for Business, check if we're already there and return true if so
     if($res.rawResponse.ResponseUri.OriginalString.IndexOf("/personal/") -ne -1){
@@ -2125,32 +2112,32 @@ function loginV2(){
 
     #MFA check
     try{
-        $res = handleMFArequest -res $res -clientId $clientId
+        $res = handleMFArequest -res $res[0] -clientId $clientId
         log -text "MFA challenge completed"
     }catch{
         log -text "MFA check result: $_"
-    }
+    }    
 
     #sometimes additional redirects are needed, fail if redirects fail, succeed if none are detected or if they are followed
     try{
-        $res = handleO365Redirect -res $res[0]
+        $res = handleO365Redirect -res $res
     }catch{
         return $False
-    }
+    }    
 
     #MFA check
     try{
-        $res = handleMFArequest -res $res -clientId $clientId
+        $res = handleMFArequest -res $res[0] -clientId $clientId
         log -text "MFA challenge completed"
     }catch{
         log -text "MFA check result: $_"
-    }
-
+    }   
+    
     return $True
 }
 
 #region loginFunction
-function login(){
+function login(){ 
     log -text "Login attempt using IE method"
     #AzureAD SSO check if a tile exists for this user
     if($userLookupMode -eq 3){
@@ -2159,41 +2146,41 @@ function login(){
         }
     }
 
-    #click to open up the login menu
+    #click to open up the login menu 
     try{
         #try to trigger going back to the old signin method
         (getElementById -id "uxOptInLink").Click()
         waitForIE
-        log -text "Found sign in elements new method on Office 365 login page, trying to redirect to new method"
+        log -text "Found sign in elements new method on Office 365 login page, trying to redirect to new method" 
     }catch{
         log -text "No redirect to new sign in method detected"
     }
     try{
         (getElementById -id "otherTileText").Click()
-        log -text "Found sign in elements type 1 on Office 365 login page, proceeding"
+        log -text "Found sign in elements type 1 on Office 365 login page, proceeding" 
     }catch{
         log -text "Failed to find signin element type 1 on Office 365 login page. Error details: $($Error[0])"
     }
-    waitForIE
-
+    waitForIE 
+ 
     $userName = $userUPN
 
     log -text "Will use $userName as login"
 
-    #attempt to trigger redirect to detect if we're using ADFS automatically
-    try{
-        log -text "attempting to trigger a redirect to SSO Provider using method 1"
-        (getElementById -id "i0116").value = $userName
-        (getElementById -id "i0116").innerText = $userName
+    #attempt to trigger redirect to detect if we're using ADFS automatically 
+    try{ 
+        log -text "attempting to trigger a redirect to SSO Provider using method 1" 
+        (getElementById -id "i0116").value = $userName      
+        (getElementById -id "i0116").innerText = $userName 
+        waitForIE 
+        (getElementById -id "idSIButton9").click() 
         waitForIE
-        (getElementById -id "idSIButton9").click()
-        waitForIE
-    }catch{
+    }catch{ 
         log -text "Failed to find the correct controls at $($script:ie.LocationURL) to log in by script, check your browser and proxy settings or check for an update of this script or switch to Native mode. $($Error[0])" -fout
         $script:errorsForUser += "Mapping cannot continue because we could not log in to Office 365`n"
         return $False
-    }
-    Start-Sleep -s 2
+    } 
+    Start-Sleep -s 2 
     try{
         (getElementById -id "aadTileTitle").click()
         log -text "Work account selected"
@@ -2205,9 +2192,9 @@ function login(){
         $script:form1.Refresh()
     }
 
-    $redirWaited = 0
-    while($True){
-        Start-Sleep -m 500
+    $redirWaited = 0 
+    while($True){ 
+        Start-Sleep -m 500 
 
         checkIfMFASetupIsRequired
 
@@ -2215,15 +2202,42 @@ function login(){
 
         try{
             (getElementById -id "idSIButton9").click()
-            log -text "KMSI prompt detected"
+            log -text "KMSI prompt detected" 
             waitForIE
+        }catch{$Null}
+        
+        #MFA PhoneCall handler
+        try{
+            $tfa_call_status = getElementById -id "idDiv_SAOTCC_Description"
+            log -text "detected you're being called by MFA, waiting 10 seconds so you can reply..."
+            Start-Sleep -s 10
+        }catch{$Null}
+             
+        #MFA Text handler
+        try{
+            $tfa_form = getElementById -id "idTxtBx_SAOTCC_OTC"
+            log -text "detected an MFA prompt, asking for SMS code"
+            $code = askForCode
+            (getElementById -id "idTxtBx_SAOTCC_OTC").value = $code 
+            (getElementById -id "idTxtBx_SAOTCC_OTC").innerText = $code 
+                 
+ 
+            (getElementById -id "idChkBx_SAOTCC_TD").checked = "checked"
+            log -text "Set remember device"
+
+            waitForIE
+            Start-Sleep -s 1
+            (getElementById -id "idSubmit_SAOTCC_Continue").click() 
+            log -text "clicked MFA button"
+            waitForIE
+            Start-Sleep -s 1
         }catch{$Null}
 
         #If ADFS or Azure automatically signs us on, this will trigger
         if($redirWaited -gt 1 -and (checkIfAtO365URL -userUPN $userUPN -finalURLs $finalURLs) -eq $True){
             log -text "Detected an url that indicates we've been signed in automatically: $($script:ie.LocationURL)"
             $useADFS = $True
-            break
+            break            
         }
 
         #this is the ADFS login control ID, modify this in the script setup if you have a custom IdP
@@ -2234,29 +2248,29 @@ function login(){
             log -text "Waited $redirWaited of $adfsWaitTime seconds for SSO redirect. While looking for $adfsLoginInput at $($script:ie.LocationURL). If you're not using SSO this message is expected."
         }
 
-        $redirWaited += 0.5
+        $redirWaited += 0.5 
         #found ADFS control
         if($found_ADFSControl){
-            log -text "ADFS Control found, we were redirected to: $($script:ie.LocationURL)"
+            log -text "ADFS Control found, we were redirected to: $($script:ie.LocationURL)" 
             $useADFS = $True
-            break
-        }
+            break            
+        } 
 
-        if($redirWaited -ge $adfsWaitTime){
-            log -text "waited for more than $adfsWaitTime to get redirected by SSO provider, attempting normal signin"
-            $useADFS = $False
-            break
-        }
-    }
-
+        if($redirWaited -ge $adfsWaitTime){ 
+            log -text "waited for more than $adfsWaitTime to get redirected by SSO provider, attempting normal signin" 
+            $useADFS = $False    
+            break 
+        } 
+    }  
+    
     #update progress bar
     if($showProgressBar) {
         $script:progressbar1.Value = 40
         $script:form1.Refresh()
-    }
+    }       
 
-    #if not using ADFS, sign in
-    if($useADFS -eq $False){
+    #if not using ADFS, sign in 
+    if($useADFS -eq $False){ 
         if($abortIfNoAdfs){
             log -text "abortIfNoAdfs was set to true, SSO provider was not detected, script is exiting" -fout
             $script:errorsForUser += "Onedrivemapper cannot login because SSO provider is not available`n"
@@ -2264,17 +2278,17 @@ function login(){
         }
 
         if((checkIfAtO365URL -userUPN $userUPN -finalURLs $finalURLs) -eq $True){
-            #we've been logged in, we can abort the login function
-            log -text "login detected, login function succeeded, final url: $($script:ie.LocationURL)"
-            return $True
+            #we've been logged in, we can abort the login function 
+            log -text "login detected, login function succeeded, final url: $($script:ie.LocationURL)" 
+            return $True             
         }
         $pwdAttempts = 0
         while($pwdAttempts -lt 4){
             $pwdAttempts++
-            try{
+            try{ 
                 $checkBox = getElementById -id "idChkBx_PWD_KMSI0Pwd"
                 if($checkBox.checked -eq $False){
-                    $checkBox.click()
+                    $checkBox.click() 
                     log -text "Signin Option persistence selected"
                 }else{
                     log -text "Signin Option persistence was already selected"
@@ -2287,20 +2301,20 @@ function login(){
                 if($pwdAttempts -gt 2){
                     if($userLookupMode -eq 4){
                         $userName = (retrieveLogin -forceNewUsername)
-                        (getElementById -id "i0116").value = $userName
-                        (getElementById -id "i0116").innerText = $userName
+                        (getElementById -id "i0116").value = $userName      
+                        (getElementById -id "i0116").innerText = $userName 
                     }
                     $newPwd = retrievePassword -forceNewPassword
-                    (getElementById -id "i0118").value = $newPwd
+                    (getElementById -id "i0118").value = $newPwd 
                     (getElementById -id "i0118").innerText = $newPwd
                 }else{
-                    $newPwd = retrievePassword
-                    (getElementById -id "i0118").value = $newPwd
-                    (getElementById -id "i0118").innerText = $newPwd
+                    $newPwd = retrievePassword 
+                    (getElementById -id "i0118").value = $newPwd 
+                    (getElementById -id "i0118").innerText = $newPwd 
                     waitForIE
                     Start-Sleep -s 1
                 }
-                (getElementById -id "idSIButton9").click()
+                (getElementById -id "idSIButton9").click() 
                 waitForIE
                 Start-Sleep -s 1
                 #MFA PhoneCall handler
@@ -2314,27 +2328,27 @@ function login(){
                     $tfa_form = getElementById -id "idTxtBx_SAOTCC_OTC"
                     log -text "detected an MFA prompt, asking for SMS code"
                     $code = askForCode
-                    (getElementById -id "idTxtBx_SAOTCC_OTC").value = $code
-                    (getElementById -id "idTxtBx_SAOTCC_OTC").innerText = $code
+                    (getElementById -id "idTxtBx_SAOTCC_OTC").value = $code 
+                    (getElementById -id "idTxtBx_SAOTCC_OTC").innerText = $code 
                     waitForIE
                     Start-Sleep -s 1
-                    (getElementById -id "idSubmit_SAOTCC_Continue").click()
+                    (getElementById -id "idSubmit_SAOTCC_Continue").click() 
                     log -text "clicked MFA button"
                     waitForIE
                     Start-Sleep -s 1
                 }catch{$Null}
                 try{
-                    (getElementById -id "idSIButton9").click()
+                    (getElementById -id "idSIButton9").click() 
                     waitForIE
                 }catch{
                     log -text "no KMSI prompt even though we expected one" -warning
                 }
-            }catch{
+            }catch{ 
                 if((checkIfAtO365URL -userUPN $userUPN -finalURLs $finalURLs) -eq $True){
-                    #we've been logged in, we can abort the login function
-                    log -text "login detected, login function succeeded, final url: $($script:ie.LocationURL)"
-                    return $True
-                }
+                    #we've been logged in, we can abort the login function 
+                    log -text "login detected, login function succeeded, final url: $($script:ie.LocationURL)" 
+                    return $True 
+                } 
                 log -text "Failed to find the correct controls at $($ie.LocationURL) to log in by script, check your browser and proxy settings or check for an update of this script (2). $($Error[0])" -fout
                 return $False
             }
@@ -2342,52 +2356,52 @@ function login(){
             waitForIE
             #check if the error field does not appear, if it does not our attempt was succesfull
             if((checkErrorAtLoginValue -mode "msonline") -eq $False){
-                break
+                break   
             }else{
                 if((checkIfAtO365URL -userUPN $userUPN -finalURLs $finalURLs) -eq $True){
-                    #we've been logged in, we can abort the login function
-                    log -text "login detected, login function succeeded, final url: $($script:ie.LocationURL)"
-                    return $True
+                    #we've been logged in, we can abort the login function 
+                    log -text "login detected, login function succeeded, final url: $($script:ie.LocationURL)" 
+                    return $True             
                 }
                 log -text "There was an issue while trying to log in during attempt $pwdAttempts" -fout
             }
             $script:errorsForUser = $Null
         }
-    }else{
-        #check if logged in now automatically after ADFS redirect
+    }else{ 
+        #check if logged in now automatically after ADFS redirect 
         if((checkIfAtO365URL -userUPN $userUPN -finalURLs $finalURLs) -eq $True){
-            #we've been logged in, we can abort the login function
-            log -text "login detected, login function succeeded, final url: $($script:ie.LocationURL)"
-            return $True
-        }
-    }
-
+            #we've been logged in, we can abort the login function 
+            log -text "login detected, login function succeeded, final url: $($script:ie.LocationURL)" 
+            return $True 
+        } 
+    } 
+ 
     waitForIE
-
-    #Check if we arrived at a 404, or an actual page
-    if($script:ie.Document.IHTMLDocument2_url -like "res://ieframe.dll/http_404.htm*") {
+ 
+    #Check if we arrived at a 404, or an actual page 
+    if($script:ie.Document.IHTMLDocument2_url -like "res://ieframe.dll/http_404.htm*") { 
         log -text "We received a 404 error after our signin attempt, retrying...." -fout
         $script:ie.navigate("https://portal.office.com")
         waitForIE
-        if($script:ie.Document.IHTMLDocument2_url -like "res://ieframe.dll/http_404.htm*") {
+        if($script:ie.Document.IHTMLDocument2_url -like "res://ieframe.dll/http_404.htm*") { 
             log -text "We received a 404 error again, aborting" -fout
             $script:errorsForUser += "Mapping cannot continue because we could not log in to Office 365`n"
-            return $False
-        }
-    }
+            return $False    
+        }     
+    } 
 
-    #check if logged in now
+    #check if logged in now 
     if((checkIfAtO365URL -userUPN $userUPN -finalURLs $finalURLs) -eq $True){
-        #we've been logged in, we can abort the login function
-        log -text "login detected, login function succeeded, final url: $($script:ie.LocationURL)"
-        return $True
-    }else{
-        if($useADFS){
-            log -text "ADFS did not automatically sign us on, attempting to enter credentials at $($script:ie.LocationURL)"
+        #we've been logged in, we can abort the login function 
+        log -text "login detected, login function succeeded, final url: $($script:ie.LocationURL)" 
+        return $True 
+    }else{ 
+        if($useADFS){ 
+            log -text "ADFS did not automatically sign us on, attempting to enter credentials at $($script:ie.LocationURL)" 
             $pwdAttempts = 0
             while($pwdAttempts -lt 3){
                 $pwdAttempts++
-                try{
+                try{ 
                     if($userLookupMode -eq 4 -and $pwdAttempts -gt 1){
                         $userName = (retrieveLogin -forceNewLogin)
                     }
@@ -2399,46 +2413,46 @@ function login(){
                     if($pwdAttempts -gt 1){
                         (getElementById -id $adfsPwdInput).value = retrievePassword -forceNewPassword
                     }else{
-                        (getElementById -id $adfsPwdInput).value = retrievePassword
+                        (getElementById -id $adfsPwdInput).value = retrievePassword 
                     }
-                    (getElementById -id $adfsButton).click()
-                    waitForIE
-                    Start-Sleep -s 1
-                    waitForIE
+                    (getElementById -id $adfsButton).click() 
+                    waitForIE 
+                    Start-Sleep -s 1 
+                    waitForIE  
                     if((checkIfAtO365URL -userUPN $userUPN -finalURLs $finalURLs) -eq $True){
-                        #we've been logged in, we can abort the login function
-                        log -text "login detected, login function succeeded, final url: $($script:ie.LocationURL)"
-                        return $True
-                    }
-                }catch{
+                        #we've been logged in, we can abort the login function 
+                        log -text "login detected, login function succeeded, final url: $($script:ie.LocationURL)" 
+                        return $True 
+                    } 
+                }catch{ 
                     log -text "Failed to find the correct controls at $($script:ie.LocationURL) to log in by script, check your browser and proxy settings or modify this script to match your ADFS form. Error details: $($Error[0])" -fout
                     $script:errorsForUser += "Mapping cannot continue because we could not log in to Office 365`n"
-                    return $False
+                    return $False 
                 }
                 #check if the error field does not appear, if it does not our attempt was succesfull
                 if((checkErrorAtLoginValue -mode "adfs") -eq $False){
-                    break
+                    break   
                 }
             }
-
-            waitForIE
-            #check if logged in now
+ 
+            waitForIE   
+            #check if logged in now         
             if((checkIfAtO365URL -userUPN $userUPN -finalURLs $finalURLs) -eq $True){
-                #we've been logged in, we can abort the login function
-                log -text "login detected, login function succeeded, final url: $($ie.LocationURL)"
-                return $True
-            }else{
+                #we've been logged in, we can abort the login function 
+                log -text "login detected, login function succeeded, final url: $($ie.LocationURL)" 
+                return $True 
+            }else{ 
                 log -text "We attempted to login with ADFS, but did not end up at the expected location. Detected url: $($ie.LocationURL), expected URL: $($baseURL)" -fout
                 $script:errorsForUser += "Mapping cannot continue because we could not log in to Office 365`n"
                 return $False
-            }
-        }else{
+            } 
+        }else{ 
             log -text "We attempted to login without using ADFS, but did not end up at the expected location. Detected url: $($ie.LocationURL), expected URL: $($baseURL)" -fout
             $script:errorsForUser += "Mapping cannot continue because we could not log in to Office 365`n"
-            return $False
-        }
-    }
-}
+            return $False 
+        } 
+    } 
+} 
 #endregion
 
 #return -1 if nothing found, or value if found
@@ -2471,14 +2485,14 @@ function addSiteToIEZoneThroughRegistry{
             }
             $components += $subDomainString
             $components += $old[$count-2]
-            $components += $old[$count-1]
-        }
+            $components += $old[$count-1]    
+        } 
         if($count -gt 2){
-            $res = New-Item "hkcu:\software\microsoft\windows\currentversion\internet settings\zonemap\domains\$($components[1]).$($components[2])" -ErrorAction SilentlyContinue
+            $res = New-Item "hkcu:\software\microsoft\windows\currentversion\internet settings\zonemap\domains\$($components[1]).$($components[2])" -ErrorAction SilentlyContinue 
             $res = New-Item "hkcu:\software\microsoft\windows\currentversion\internet settings\zonemap\domains\$($components[1]).$($components[2])\$($components[0])" -ErrorAction SilentlyContinue
             $res = New-ItemProperty "hkcu:\software\microsoft\windows\currentversion\internet settings\zonemap\domains\$($components[1]).$($components[2])\$($components[0])" -Name "https" -value $mode -ErrorAction Stop
         }else{
-            $res = New-Item "hkcu:\software\microsoft\windows\currentversion\internet settings\zonemap\domains\$($components[0]).$($components[1])" -ErrorAction SilentlyContinue
+            $res = New-Item "hkcu:\software\microsoft\windows\currentversion\internet settings\zonemap\domains\$($components[0]).$($components[1])" -ErrorAction SilentlyContinue 
             $res = New-ItemProperty "hkcu:\software\microsoft\windows\currentversion\internet settings\zonemap\domains\$($components[0]).$($components[1])" -Name "https" -value $mode -ErrorAction Stop
         }
     }catch{
@@ -2491,15 +2505,15 @@ function getUserLogin{
     Param(
         [Switch]$reType
     )
-    #get user login
-    if($forceUserName.Length -gt 2){
-        log -text "A username was already specified in the script configuration: $($forceUserName)"
-        $userUPN = $forceUserName
+    #get user login 
+    if($forceUserName.Length -gt 2){ 
+        log -text "A username was already specified in the script configuration: $($forceUserName)" 
+        $userUPN = $forceUserName 
         $userLookupMode = 0
     }else{
         switch($userLookupMode){
-            1 {
-                log -text "userLookupMode is set to 1 -> checking Active Directory UPN"
+            1 {    
+                log -text "userLookupMode is set to 1 -> checking Active Directory UPN" 
                 try{
                     $userUPN = (lookupLoginFromAD).ToLower()
                     $Null = retrieveLogin -cacheLogin $userUPN
@@ -2508,9 +2522,9 @@ function getUserLogin{
                 }
             }
             2 {
-                log -text "userLookupMode is set to 2 -> checking Active Directory email address"
-                try{
-                    $userUPN = (lookupLoginFromAD -lookupEmail).ToLower()
+                log -text "userLookupMode is set to 2 -> checking Active Directory email address" 
+                try{    
+                    $userUPN = (lookupLoginFromAD -lookupEmail).ToLower()  
                     $Null = retrieveLogin -cacheLogin $userUPN
                 }catch{
                     $userUPN = retrieveLogin
@@ -2525,7 +2539,7 @@ function getUserLogin{
                     $basePath = "HKLM:\SOFTWARE\Microsoft\IdentityStore\Cache\$strSID\IdentityCache\$strSID"
                     if((test-path $basePath) -eq $False){
                         log -text "userLookupMode is set to 3, but the registry path $basePath does not exist! All lookup modes exhausted, exiting" -fout
-                        abort_OM
+                        abort_OM   
                     }
                     $userId = (Get-ItemProperty -Path $basePath -Name UserName).UserName
                     if($userId -and $userId -like "*@*"){
@@ -2550,14 +2564,14 @@ function getUserLogin{
             5 {
                 try{
                     if((test-path $userLoginRegistryKey)){
-                        $userId = (Get-ItemProperty -Path $userLoginRegistryKey -Name Office365Login).Office365Login
+                        $userId = (Get-ItemProperty -Path $userLoginRegistryKey -Name Office365Login).Office365Login   
                     }else{
                         Throw "$userLoginRegistryKey path does not exist"
                     }
                 }catch{
                     log -text "failed to detect username in $userLoginRegistryKey path due to $($Error[0])"
                     abort_OM
-                }
+                } 
                 if($userId -and $userId -like "*@*"){
                     log -text "userLookupMode is set to 5, we detected $userId in $userLoginRegistryKey"
                     $userUPN = ($userId).ToLower()
@@ -2614,7 +2628,7 @@ function getUserLogin{
 }
 
 function checkWebClient{
-    if((Get-Service -Name WebClient).Status -ne "Running"){
+    if((Get-Service -Name WebClient).Status -ne "Running"){ 
         #attempt to auto-start if user is admin
         if($isElevated){
             Start-Service WebClient -ErrorAction SilentlyContinue | Out-Null
@@ -2627,7 +2641,7 @@ function checkWebClient{
                 $script:errorsForUser += "$MD_DriveLetter could not be mapped because the WebClient service is not running`n"
             }
         }
-    }
+    } 
 }
 
 function restartMe{
@@ -2644,24 +2658,24 @@ function restartMe{
         log -text "starting newer version of OnedriveMapper"
     }
     try{$form1.Close()}catch{$Null}
-    try{
+    try{          
         Start-Process powershell -ArgumentList $arguments -Wait
         Exit
     }catch{
         log -text "Failed to restart Onedrivemapper: $($Error[0])" -fout
-        Exit
-    }
+        Exit        
+    }            
 }
 
 #check if the script is running elevated, run via scheduled task if UAC is not disabled
-If (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")){
+If (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")){   
     log -text "Script elevation level: Administrator" -fout
     $scheduleTask = $True
     $isElevated = $True
     if((checkRegistryKeyValue -basePath "HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System" -entryName "EnableLUA") -eq 0){
-        log -text "NOTICE: $($BaseKeypath)\EnableLua found in registry and set to 0, you have disabled UAC, the script does not need to bypass by using a scheduled task"
-        $scheduleTask = $False
-    }
+        log -text "NOTICE: $($BaseKeypath)\EnableLua found in registry and set to 0, you have disabled UAC, the script does not need to bypass by using a scheduled task"    
+        $scheduleTask = $False                
+    }    
     if($asTask){
         log -text "Already running as task, but still elevated, will attempt to map normally but drives may not be visible" -fout
         $scheduleTask = $False
@@ -2678,12 +2692,12 @@ If (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
 }
 
 #load windows libraries that we require
-try{
-    [void] [System.Reflection.Assembly]::LoadWithPartialName("System.Drawing")
-    [void] [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
-}catch{
+try{ 
+    [void] [System.Reflection.Assembly]::LoadWithPartialName("System.Drawing") 
+    [void] [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")  
+}catch{ 
     log -text "Error loading windows forms libraries, script will not be able to display a password input box" -fout
-}
+} 
 
 $WebAssemblyloaded = $True
 [void] [System.Reflection.Assembly]::LoadWithPartialName("System.Web")
@@ -2724,7 +2738,10 @@ if($showConsoleOutput -eq $False){
 }
 
 if($allowFallbackMode -and $fallBackMode){
-    if($authMethod -eq "native"){
+    if($authMethod -eq "azure"){
+        $authMethod = "native"
+        log -text "detected we are running in fallback mode, switching from azure to native" -warning
+    }elseif($authMethod -eq "native"){
         $authMethod = "ie"
         log -text "detected we are running in fallback mode, switching from native to ie" -warning
     }else{
@@ -2759,13 +2776,13 @@ if($showProgressBar) {
     $form1.MinimumSize = new-Object System.Drawing.Size($width,$height)
     $form1.Size = new-Object System.Drawing.Size($width,$height)
 
-    $form1.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::None
+    $form1.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::None 
     #display center screen
     $form1.StartPosition = [System.Windows.Forms.FormStartPosition]::Manual
     $screen = ([System.Windows.Forms.Screen]::AllScreens | Where-Object {$_.Primary}).WorkingArea
     $form1.Location = New-Object System.Drawing.Size(($screen.Right - $width), ($screen.Bottom - $height))
-    $form1.Topmost = $True
-    $form1.TopLevel = $True
+    $form1.Topmost = $True 
+    $form1.TopLevel = $True 
 
     # create label
     $label1 = New-Object system.Windows.Forms.Label
@@ -2786,42 +2803,24 @@ if($showProgressBar) {
     $label2.backColor= $progressBarColor
 
     #add the label to the form
-    $form1.controls.add($label1)
-    $form1.controls.add($label2)
+    $form1.controls.add($label1) 
+    $form1.controls.add($label2) 
     $progressBar1 = New-Object System.Windows.Forms.ProgressBar
     $progressBar1.Name = 'progressBar1'
     $progressBar1.Value = 0
-    $progressBar1.Style="Continuous"
+    $progressBar1.Style="Continuous" 
     $System_Drawing_Size = New-Object System.Drawing.Size
     $System_Drawing_Size.Width = $width
     $System_Drawing_Size.Height = 10
-    $progressBar1.Size = $System_Drawing_Size
-
+    $progressBar1.Size = $System_Drawing_Size   
+    
     $progressBar1.Left = 0
     $progressBar1.Top = 29
     $form1.Controls.Add($progressBar1)
-    $form1.Show()| out-null
-    $form1.Focus() | out-null
+    $form1.Show()| out-null  
+    $form1.Focus() | out-null 
     $progressbar1.Value = 5
     $form1.Refresh()
-}
-
-#do a version check if allowed
-if($versionCheck){
-    #update progress bar
-    try{
-        versionCheck -currentVersion $version
-        log -text "NOTICE: you are running the latest (v$version) version of OnedriveMapper"
-    }catch{
-        if($showProgressBar) {
-            $form1.controls["Label1"].Text = "New OnedriveMapper version available!"
-            $form1.Refresh()
-            Start-Sleep -s 1
-            $form1.controls["Label1"].Text = "OnedriveMapper v$version is connecting your drives..."
-            $form1.Refresh()
-        }
-        log -text "ERROR: $($Error[0])" -fout
-    }
 }
 
 #load cookie code and test-set a cookie
@@ -2877,55 +2876,62 @@ if($authMethod -ne "native"){
     }
 }
 
-#Check if Zone Configuration is on a per machine or per user basis, then check the zones
+#Check if Zone Configuration is on a per machine or per user basis, then check the zones 
 $privateZoneFound = $False
 $publicZoneFound = $False
 
 #check if zone enforcement is set to machine only
 $reg_HKLM = checkRegistryKeyValue -basePath "HKLM:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings" -entryName "Security HKLM only"
 if($reg_HKLM -eq -1){
-    log -text "NOTICE: HKLM:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\Security HKLM only not found in registry, your zone configuration could be set on both levels"
+    log -text "NOTICE: HKLM:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\Security HKLM only not found in registry, your zone configuration could be set on both levels" 
 }elseif($reg_HKLM -eq 1){
-    log -text "NOTICE: HKLM:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\Security HKLM only found in registry and set to 1, your zone configuration is set on a machine level"
+    log -text "NOTICE: HKLM:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\Security HKLM only found in registry and set to 1, your zone configuration is set on a machine level"    
 }
 
 #check if sharepoint and onedrive are set as safe sites at the user level
 if($reg_HKLM -ne 1){
-    if((checkRegistryKeyValue -basePath "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)$($privateSuffix)" -entryName "https") -eq 2 -or (checkRegistryKeyValue -basePath "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)$($privateSuffix)" -entryName "*") -eq 2){
-        log -text "NOTICE: $($O365CustomerName)$($privateSuffix).sharepoint.com found in IE Trusted Sites on user level"
-        $privateZoneFound = $True
+    if((checkRegistryKeyValue -basePath "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)$($privateSuffix)" -entryName "https") -match '[1-2]' -or (checkRegistryKeyValue -basePath "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)$($privateSuffix)" -entryName "*") -match '[1-2]'){
+        log -text "NOTICE: $($O365CustomerName)$($privateSuffix).sharepoint.com found in IE Trusted Sites on user level"  
+        $privateZoneFound = $True        
     }
-    if((checkRegistryKeyValue -basePath "HKCU:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)$($privateSuffix)" -entryName "https") -eq 2 -or (checkRegistryKeyValue -basePath "HKCU:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)$($privateSuffix)" -entryName "*") -eq 2){
-        log -text "NOTICE: $($O365CustomerName)$($privateSuffix).sharepoint.com found in IE Trusted Sites on user level (through GPO)"
-        $privateZoneFound = $True
+    if((checkRegistryKeyValue -basePath "HKCU:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)$($privateSuffix)" -entryName "https") -match '[1-2]' -or (checkRegistryKeyValue -basePath "HKCU:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)$($privateSuffix)" -entryName "*") -match '[1-2]'){
+        log -text "NOTICE: $($O365CustomerName)$($privateSuffix).sharepoint.com found in IE Trusted Sites on user level (through GPO)"  
+        $privateZoneFound = $True        
     }
-    if((checkRegistryKeyValue -basePath "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)" -entryName "https") -eq 2 -or (checkRegistryKeyValue -basePath "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)" -entryName "*") -eq 2){
-        log -text "NOTICE: $($O365CustomerName).sharepoint.com found in IE Trusted Sites on user level"
-        $publicZoneFound = $True
+    if((checkRegistryKeyValue -basePath "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)" -entryName "https") -match '[1-2]' -or (checkRegistryKeyValue -basePath "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)" -entryName "*") -match '[1-2]'){
+        log -text "NOTICE: $($O365CustomerName).sharepoint.com found in IE Trusted Sites on user level"  
+        $publicZoneFound = $True        
     }
-    if((checkRegistryKeyValue -basePath "HKCU:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)" -entryName "https") -eq 2 -or (checkRegistryKeyValue -basePath "HKCU:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)" -entryName "*") -eq 2){
-        log -text "NOTICE: $($O365CustomerName).sharepoint.com found in IE Trusted Sites on user level (through GPO)"
-        $publicZoneFound = $True
+    if((checkRegistryKeyValue -basePath "HKCU:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)" -entryName "https") -match '[1-2]' -or (checkRegistryKeyValue -basePath "HKCU:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)" -entryName "*") -match '[1-2]'){
+        log -text "NOTICE: $($O365CustomerName).sharepoint.com found in IE Trusted Sites on user level (through GPO)" 
+        $publicZoneFound = $True        
     }
 }
 
 #check if sharepoint and onedrive are set as safe sites at the machine level
-if((checkRegistryKeyValue -basePath "HKLM:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)$($privateSuffix)" -entryName "https") -eq 2 -or (checkRegistryKeyValue -basePath "HKLM:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)$($privateSuffix)" -entryName "*") -eq 2){
+if((checkRegistryKeyValue -basePath "HKLM:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)$($privateSuffix)" -entryName "https") -match '[1-2]' -or (checkRegistryKeyValue -basePath "HKLM:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)$($privateSuffix)" -entryName "*") -match '[1-2]'){
     log -text "NOTICE: $($O365CustomerName)$($privateSuffix).sharepoint.com found in IE Trusted Sites on machine level"
-    $privateZoneFound = $True
+    $privateZoneFound = $True 
 }
-if((checkRegistryKeyValue -basePath "HKLM:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)$($privateSuffix)" -entryName "https") -eq 2 -or (checkRegistryKeyValue -basePath "HKLM:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)$($privateSuffix)" -entryName "*") -eq 2){
-    log -text "NOTICE: $($O365CustomerName)$($privateSuffix).sharepoint.com found in IE Trusted Sites on machine level (through GPO)"
-    $privateZoneFound = $True
+if((checkRegistryKeyValue -basePath "HKLM:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)$($privateSuffix)" -entryName "https") -match '[1-2]' -or (checkRegistryKeyValue -basePath "HKLM:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)$($privateSuffix)" -entryName "*") -match '[1-2]'){
+    log -text "NOTICE: $($O365CustomerName)$($privateSuffix).sharepoint.com found in IE Trusted Sites on machine level (through GPO)"  
+    $privateZoneFound = $True        
 }
-if((checkRegistryKeyValue -basePath "HKLM:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)" -entryName "https") -eq 2 -or (checkRegistryKeyValue -basePath "HKLM:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)" -entryName "*") -eq 2){
-    log -text "NOTICE: $($O365CustomerName).sharepoint.com found in IE Trusted Sites on machine level"
-    $publicZoneFound = $True
+if((checkRegistryKeyValue -basePath "HKLM:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)" -entryName "https") -match '[1-2]' -or (checkRegistryKeyValue -basePath "HKLM:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)" -entryName "*") -match '[1-2]'){
+    log -text "NOTICE: $($O365CustomerName).sharepoint.com found in IE Trusted Sites on machine level"  
+    $publicZoneFound = $True    
 }
-if((checkRegistryKeyValue -basePath "HKLM:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)" -entryName "https") -eq 2 -or (checkRegistryKeyValue -basePath "HKLM:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)" -entryName "*") -eq 2){
-    log -text "NOTICE: $($O365CustomerName).sharepoint.com found in IE Trusted Sites on machine level (through GPO)"
-    $publicZoneFound = $True
+if((checkRegistryKeyValue -basePath "HKLM:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)" -entryName "https") -match '[1-2]' -or (checkRegistryKeyValue -basePath "HKLM:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\sharepoint.com\$($O365CustomerName)" -entryName "*") -match '[1-2]'){
+    log -text "NOTICE: $($O365CustomerName).sharepoint.com found in IE Trusted Sites on machine level (through GPO)"  
+    $publicZoneFound = $True    
 }
+
+#add an entry to prevent file copy paste warnings
+try{
+    $res = New-Item "hkcu:\software\microsoft\windows\currentversion\internet settings\zonemap\domains\sharepoint.com@SSL" -ErrorAction SilentlyContinue 
+    $res = New-Item "hkcu:\software\microsoft\windows\currentversion\internet settings\zonemap\domains\sharepoint.com@SSL\$($O365CustomerName)" -ErrorAction SilentlyContinue
+    $res = New-ItemProperty "hkcu:\software\microsoft\windows\currentversion\internet settings\zonemap\domains\sharepoint.com@SSL\$($O365CustomerName)" -Name "file" -value 1 -ErrorAction SilentlyContinue
+}catch{$Null}
 
 #log results, try to automatically add trusted sites to user trusted sites if not yet added
 if($publicZoneFound -eq $False){
@@ -2949,7 +2955,7 @@ if($authMethod -ne "native" -and (checkRegistryKeyValue -basePath "HKLM:\Softwar
         }catch{
             log -text "failed to automatically add a registry key to prevent the IE firstrun wizard from starting"
         }
-    }
+    }    
 }
 
 if($autoDetectProxy -eq $False){
@@ -2961,7 +2967,7 @@ if($autoDetectProxy -eq $False){
         log -text "IE Automatic Proxy Detection is not yet disabled, attempting to disable..."
         try{
             $res = New-ItemProperty $path -Name "AutoDetect" -value 0 -ErrorAction Stop
-            log -text "IE Automatic Proxy Detection disabled"
+            log -text "IE Automatic Proxy Detection disabled"    
         }catch{
             log -text "Failed to disable IE automatic proxy detection: $($Error[0])" -fout
         }
@@ -2978,26 +2984,26 @@ if($showProgressBar) {
 
 #region flightChecks
 
-#Check if required HTML parsing libraries have been installed
-if([System.IO.File]::Exists("$(${env:ProgramFiles(x86)})\Microsoft.NET\Primary Interop Assemblies\Microsoft.mshtml.dll") -eq $False){
+#Check if required HTML parsing libraries have been installed 
+if([System.IO.File]::Exists("$(${env:ProgramFiles(x86)})\Microsoft.NET\Primary Interop Assemblies\Microsoft.mshtml.dll") -eq $False){ 
     log -text "Microsoft Office installation not detected"
-}
-
+}  
+ 
 #Check if webdav locking is enabled
 if((checkRegistryKeyValue -basePath "HKLM:\SYSTEM\CurrentControlSet\Services\WebClient\Parameters\" -entryName "SupportLocking") -ne 0){
-    log -text "ERROR: WebDav File Locking support is enabled, this could cause files to become locked in your OneDrive or Sharepoint site" -fout
-}
+    log -text "ERROR: WebDav File Locking support is enabled, this could cause files to become locked in your OneDrive or Sharepoint site" -fout 
+} 
 
 #report/warn file size limit
 $sizeLimit = [Math]::Round((checkRegistryKeyValue -basePath "HKLM:\SYSTEM\CurrentControlSet\Services\WebClient\Parameters\" -entryName "FileSizeLimitInBytes")/1024/1024)
 log -text "Maximum file upload size is set to $sizeLimit MB" -warning
 
-#check if any zones are configured with Protected Mode through group policy (which we can't modify)
+#check if any zones are configured with Protected Mode through group policy (which we can't modify) 
 if($authMethod -ne "native"){
-    $BaseKeypath = "HKCU:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\Zones\"
-    for($i=0; $i -lt 5; $i++){
-        $curr = Get-ItemProperty -Path "$($BaseKeypath)\$($i)\" -Name "2500" -ErrorAction SilentlyContinue | Select-Object -exp 2500
-        if($curr -ne $Null -and $curr -ne 3){
+    $BaseKeypath = "HKCU:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\Zones\" 
+    for($i=0; $i -lt 5; $i++){ 
+        $curr = Get-ItemProperty -Path "$($BaseKeypath)\$($i)\" -Name "2500" -ErrorAction SilentlyContinue | Select-Object -exp 2500 
+        if($curr -ne $Null -and $curr -ne 3){ 
             log -text "IE Zone $i protectedmode is enabled through group policy, autoprotectedmode cannot disable it. This will likely cause the script to fail." -fout
         }
     }
@@ -3005,7 +3011,7 @@ if($authMethod -ne "native"){
 
 #endregion
 
-$baseURL = ("https://$($O365CustomerName)-my.sharepoint.com/_layouts/15/MySite.aspx?MySiteRedirect=AllDocuments")
+$baseURL = ("https://$($O365CustomerName)-my.sharepoint.com/_layouts/15/MySite.aspx?MySiteRedirect=AllDocuments") 
 $mapURLpersonal = "\\$O365CustomerName-my.sharepoint.com@SSL\DavWWWRoot\personal\"
 
 #update progress bar
@@ -3021,22 +3027,22 @@ for($count=0;$count -lt $desiredMappings.Count;$count++){
             $desiredMappings[$count].webDavPath = [System.Web.HttpUtility]::UrlDecode($desiredMappings[$count].sourceLocationPath)
         }
         $desiredMappings[$count].webDavPath = $desiredMappings[$count].webDavPath.Replace("https://","\\").Replace("/_layouts/15/start.aspx#","").Replace("sharepoint.com/","sharepoint.com@SSL\DavWWWRoot\").Replace("/Forms/AllItems.aspx","")
-        $desiredMappings[$count].webDavPath = $desiredMappings[$count].webDavPath.Replace("/","\")
+        $desiredMappings[$count].webDavPath = $desiredMappings[$count].webDavPath.Replace("/","\")  
     }else{
         $desiredMappings[$count].webDavPath = $mapURLpersonal
     }
 
     if($desiredMappings[$count].mapOnlyForSpecificGroup -and $groups){
         $group = $groups -contains $desiredMappings[$count].mapOnlyForSpecificGroup
-        if($group){
-            log -text "adding a sharepoint mapping because the user is a member of $group"
-            $desiredMappings[$count].alreadyMapped = $False
+        if($group){ 
+            log -text "adding a sharepoint mapping because the user is a member of $group" 
+            $desiredMappings[$count].alreadyMapped = $False 
         }else{
             $desiredMappings[$count].alreadyMapped = $True
         }
     }
 }
-
+ 
 #update progress bar
 if($showProgressBar) {
     $progressbar1.Value = 20
@@ -3045,84 +3051,79 @@ if($showProgressBar) {
 
 handleAzureADConnectSSO -initial
 
-log -text "Base URL: $($baseURL) `n"
+log -text "Base URL: $($baseURL) `n" 
 
 if($autoResetIE){
     & RunDll32.exe InetCpl.cpl,ClearMyTracksByProcess 2
 }
 
-#Start IE and stop it once to make sure IE sets default registry keys
-if($authMethod -ne "native" -and $autoKillIE){
-    #start invisible IE instance
-    $tempIE = new-object -com InternetExplorer.Application
-    $tempIE.visible = $debugmode
-    Start-Sleep 2
-
-    #kill all running IE instances of this user
-    $ieStatus = Get-ProcessWithOwner iexplore
-    if($ieStatus -eq 0){
+#Start IE and stop it once to make sure IE sets default registry keys 
+if($authMethod -ne "native" -and $autoKillIE){ 
+    #start invisible IE instance 
+    $tempIE = new-object -com InternetExplorer.Application 
+    $tempIE.visible = $debugmode 
+    Start-Sleep 2 
+ 
+    #kill all running IE instances of this user 
+    $ieStatus = Get-ProcessWithOwner iexplore 
+    if($ieStatus -eq 0){ 
         log -text "no instances of Internet Explorer running yet, at least one should be running" -warning
-    }elseif($ieStatus -eq -1){
+    }elseif($ieStatus -eq -1){ 
         log -text "Checking status of iexplore.exe: unable to query WMI" -fout
-    }else{
-        log -text "autoKillIE enabled, stopping IE processes"
-        foreach($Process in $ieStatus){
+    }else{ 
+        log -text "autoKillIE enabled, stopping IE processes" 
+        foreach($Process in $ieStatus){ 
                 Stop-Process $Process.handle -ErrorAction SilentlyContinue
                 log -text "Stopped process with handle $($Process.handle)"
-        }
-    }
-}elseif($authMethod -eq "ie"){
+        } 
+    } 
+}elseif($authMethod -eq "ie"){ 
     log -text "ERROR: autoKillIE disabled, IE processes not stopped. This may cause the script to fail for users with a clean/new profile" -fout
-}
+} 
 
-if($authMethod -ne "native" -and $autoProtectedMode){
-    log -text "autoProtectedMode is set to True, disabling ProtectedMode temporarily"
-    $BaseKeypath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\Zones\"
-
-    #store old values and change new ones
-    try{
-        for($i=0; $i -lt 5; $i++){
-            $curr = Get-ItemProperty -Path "$($BaseKeypath)\$($i)\" -Name "2500" -ErrorAction SilentlyContinue| Select-Object -exp 2500
-            if($curr -ne $Null){
-                $protectedModeValues[$i] = $curr
-                log -text "Zone $i was set to $curr, setting it to 3"
+if($authMethod -ne "native" -and $autoProtectedMode){ 
+    log -text "autoProtectedMode is set to True, disabling ProtectedMode temporarily" 
+    $BaseKeypath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings\Zones\" 
+     
+    #store old values and change new ones 
+    try{ 
+        for($i=0; $i -lt 5; $i++){ 
+            $curr = Get-ItemProperty -Path "$($BaseKeypath)\$($i)\" -Name "2500" -ErrorAction SilentlyContinue| Select-Object -exp 2500 
+            if($curr -ne $Null){ 
+                $protectedModeValues[$i] = $curr 
+                log -text "Zone $i was set to $curr, setting it to 3" 
             }else{
-                $protectedModeValues[$i] = 0
-                log -text "Zone $i was not yet set, setting it to 3"
+                $protectedModeValues[$i] = 0 
+                log -text "Zone $i was not yet set, setting it to 3" 
             }
             Set-ItemProperty -Path "$($BaseKeypath)\$($i)\" -Name "2500"  -Value "3" -Type Dword -ErrorAction Stop
-        }
-    }
-    catch{
+        } 
+    } 
+    catch{ 
         log -text "Failed to modify registry keys to autodisable ProtectedMode $($error[0])" -fout
-    }
+    } 
 }elseif($authMethod -ne "native"){
     log -text "autoProtectedMode is set to False, IE ProtectedMode will not be disabled temporarily" -fout
 }
 
-#start invisible IE instance
+#start invisible IE instance 
 if($authMethod -ne "native"){
     $COMFailed = $False
-    try{
+    try{ 
         $script:ie = new-object -com InternetExplorer.Application -ErrorAction Stop
-        $script:ie.visible = $debugmode
-    }catch{
+        $script:ie.visible = $debugmode 
+    }catch{ 
         log -text "failed to start Internet Explorer COM Object, check user permissions or already running instances. Will retry in 30 seconds. $($Error[0])" -fout
-        $COMFailed = $True
-    }
-
-    #retry above if failed
-    if($COMFailed){
         Start-Sleep -s 30
-        try{
+        try{ 
             $script:ie = new-object -com InternetExplorer.Application -ErrorAction Stop
-            $script:ie.visible = $debugmode
-        }catch{
+            $script:ie.visible = $debugmode 
+        }catch{ 
             log -text "failed to start Internet Explorer COM Object a second time, check user permissions or already running instances $($Error[0])" -fout
             $errorsForUser += "Mapping cannot continue because we could not start your browser"
-            abort_OM
+            abort_OM 
         }
-    }
+    } 
 }
 
 #update progress bar
@@ -3132,35 +3133,38 @@ if($showProgressBar) {
 }
 
 if($authMethod -ne "native"){
-    #navigate to the base URL of the tenant's Sharepoint to check if it exists
-    try{
-        $script:ie.navigate("https://login.microsoftonline.com/logout.srf")
+    #navigate to the base URL of the tenant's Sharepoint to check if it exists 
+    try{ 
+        if($authMethod -eq "IE"){
+            $script:ie.navigate("https://login.microsoftonline.com/logout.srf")
+            waitForIE
+            Start-Sleep -s 1
+            waitForIE
+        }
+        $script:ie.navigate($o365loginURL) 
         waitForIE
         Start-Sleep -s 1
-        waitForIE
-        $script:ie.navigate($o365loginURL)
-        waitForIE
-        Start-Sleep -s 1
-    }catch{
+    }catch{ 
         log -text "Failed to browse to the Office 365 Sign in page, this is a fatal error $($Error[0])`n" -fout
         $errorsForUser += "Mapping cannot continue because we could not contact Office 365`n"
         abort_OM
-    }
-
-    #check if we got a 404 not found
-    if($script:ie.Document.IHTMLDocument2_url -like "res://ieframe.dll/http_404.htm*") {
+    } 
+ 
+    #check if we got a 404 not found 
+    if($script:ie.Document.IHTMLDocument2_url -like "res://ieframe.dll/http_404.htm*") { 
         log -text "Failed to browse to the Office 365 Sign in page, 404 error detected, exiting script" -fout
         $errorsForUser += "Mapping cannot continue because we could not start the browser`n"
-        abort_OM
-    }
-
+        abort_OM 
+    } 
+ 
     checkIfCOMObjectIsHealthy
-
-    if($script:ie.LocationURL.StartsWith($o365loginURL)){
-        log -text "Starting logon process at: $($script:ie.LocationURL)"
-    }else{
-        log -text "For some reason we're not at the logon page, even though we tried to browse there, we'll probably fail now but let's try one final time. URL: $($script:ie.LocationURL)" -fout
-        $script:ie.navigate($o365loginURL)
+    if($authMethod -eq "IE"){
+        if($script:ie.LocationURL.StartsWith($o365loginURL)){
+            log -text "Starting logon process at: $($script:ie.LocationURL)" 
+        }else{
+            log -text "For some reason we're not at the logon page, even though we tried to browse there, we'll probably fail now but let's try one final time. URL: $($script:ie.LocationURL)" -fout
+            $script:ie.navigate($o365loginURL) 
+        }
     }
 }
 
@@ -3171,16 +3175,16 @@ if($showProgressBar) {
 }
 
 
-if($authMethod -ne "native"){
-    #Check and log if Explorer is running
-    $explorerStatus = Get-ProcessWithOwner explorer
-    if($explorerStatus -eq 0){
+if($authMethod -eq "IE"){
+    #Check and log if Explorer is running 
+    $explorerStatus = Get-ProcessWithOwner explorer 
+    if($explorerStatus -eq 0){ 
         log -text "no instances of Explorer running yet, expected at least one running" -warning
-    }elseif($explorerStatus -eq -1){
+    }elseif($explorerStatus -eq -1){ 
         log -text "Checking status of explorer.exe: unable to query WMI" -fout
-    }else{
-        log -text "Detected running explorer process"
-    }
+    }else{ 
+        log -text "Detected running explorer process" 
+    } 
     $res = login
     if($False -ne $res){
         log -text "IE login function succeeded"
@@ -3193,11 +3197,13 @@ if($authMethod -ne "native"){
             abort_OM
         }
     }
-    $script:ie.navigate($baseURL)
+    $script:ie.navigate($baseURL) 
     waitForIE
-    do {Start-Sleep -m 100} until ($script:ie.ReadyState -eq 4 -or $script:ie.ReadyState -eq 0)
+    do {Start-Sleep -m 100} until ($script:ie.ReadyState -eq 4 -or $script:ie.ReadyState -eq 0)  
     Start-Sleep -s 2
-}else{
+}
+
+if($authMethod -eq "native"){
     $res = loginV2
     if($res -eq $False){
         if($allowFallbackMode -and !$fallbackMode){
@@ -3212,6 +3218,19 @@ if($authMethod -ne "native"){
     }
 }
 
+if($authMethod -eq "azure"){
+    $script:ie.navigate($baseURL) 
+    waitForIE
+    do {Start-Sleep -m 100} until ($script:ie.ReadyState -eq 4 -or $script:ie.ReadyState -eq 0)  
+    Start-Sleep -s 2
+    if((checkIfAtO365URL -userUPN $userUPN -finalURLs $finalURLs) -eq $True){
+        #we've been logged in
+        log -text "login detected, login function succeeded, final url: $($script:ie.LocationURL)"              
+    }else{
+        log -text "azure native login failed, ensure that if you start Internet Explorer and browse to portal.office.com that you're automatically logged in. If this is not the case, you cannot use 'azure' as login mode because your workstation does not have SSO capabilities to O365" -fout
+    }
+}
+
 #update progress bar
 if($showProgressBar) {
     $script:progressbar1.Value = 45
@@ -3222,13 +3241,13 @@ if($showProgressBar) {
 subst | % {subst $_.SubString(0,2) /D}
 Get-PSDrive -PSProvider filesystem | Where-Object {$_.DisplayRoot} | % {
     if($_.DisplayRoot.StartsWith("\\$($O365CustomerName).sharepoint.com") -or $_.DisplayRoot.StartsWith("\\$($O365CustomerName)-my.sharepoint.com")){
-        try{$del = NET USE "$($_.Name):" /DELETE /Y 2>&1}catch{$Null}
+        try{$del = NET USE "$($_.Name):" /DELETE /Y 2>&1}catch{$Null}     
     }
 }
 
 #clean up empty mappings
 Get-PSDrive -PSProvider filesystem | Where-Object {($_.Used -eq 0 -and $_.Free -eq $Null)} | % {
-    try{$_ | Remove-PSDRive -Force}catch{$Null}
+    try{$_ | Remove-PSDRive -Force}catch{$Null}     
 }
 
 $suffixCounter = $Null #used in case converged mappings with the same name are detected
@@ -3243,7 +3262,7 @@ if($autoMapFavoriteSites){
             }
         }
     }
-    if($autoMapFavoritesMode -eq "Converged"){
+    if($autoMapFavoritesMode -eq "Converged"){ 
         #get first free driveletter for a converged fake mapping to contain all links
         if($drvlist -contains $autoMapFavoritesDrive){
             Foreach ($drvletter in $autoMapFavoritesDrvLetterList.ToCharArray()) {
@@ -3256,9 +3275,9 @@ if($autoMapFavoriteSites){
             }
         }else{
             $drvlist += $autoMapFavoritesDrive
-            $autoMapFavoritesDriveletter = $autoMapFavoritesDrive
-        }
-        $targetFolder = Join-Path $Env:TEMP -ChildPath "OnedriveMapperLinks"
+            $autoMapFavoritesDriveletter = $autoMapFavoritesDrive            
+        }   
+        $targetFolder = Join-Path $Env:TEMP -ChildPath "OnedriveMapperLinks" 
         if(![System.IO.Directory]::Exists($targetFolder)){
             log -text "Desired path for Team site links: $targetFolder does not exist, creating"
             try{
@@ -3279,11 +3298,15 @@ if($autoMapFavoriteSites){
         try{
             log -text "Retrieving favorited sites because autoMapFavoriteSites is set to TRUE"
             $customHeaders = @{"Upgrade-Insecure-Requests" = 1;"Cache-Control" = "max-age=0";"Accept-Language"="en-US,en;q=0.9,nl;q=0.8"}
-            $res = JosL-WebRequest -url $favoritesURL -Method GET -accept "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -customHeaders $customHeaders
+            $res = New-WebRequest -url $favoritesURL -Method GET -accept "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -customHeaders $customHeaders
         }catch{
             log -text "error retrieving favorited sites $($Error[0])" -fout
         }
-        $res = handleSpoReAuth -res $res
+        try{
+            $res = (handleO365Redirect -res $res)[0]
+        }catch{
+            continue
+        }       
         $accessToken = returnEnclosedFormValue -res $res -searchString "`"AccessToken`":`""
         $resource = returnEnclosedFormValue -res $res -searchString "`",`"Resource`":`""
         if($accessToken -eq -1 -and $resource -eq -1){
@@ -3291,7 +3314,7 @@ if($autoMapFavoriteSites){
             try{
                 log -text "Retrieving favorited sites because autoMapFavoriteSites is set to TRUE"
                 $customHeaders = @{"Upgrade-Insecure-Requests" = 1;"Cache-Control" = "max-age=0";"Accept-Language"="en-US,en;q=0.9,nl;q=0.8"}
-                $res = JosL-WebRequest -url $favoritesURL -Method GET -accept "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -customHeaders $customHeaders
+                $res = New-WebRequest -url $favoritesURL -Method GET -accept "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -customHeaders $customHeaders
                 $accessToken = returnEnclosedFormValue -res $res -searchString "`"AccessToken`":`""
                 $resource = returnEnclosedFormValue -res $res -searchString "`",`"Resource`":`""
             }catch{
@@ -3301,8 +3324,8 @@ if($autoMapFavoriteSites){
         try{
             $payLoad = (returnEnclosedFormValue -res $res -searchString "Payload`":`"{" -endString "}").Replace("\","")
             $payLoad = "{$payLoad}"
-            $customHeaders = @{"SPHome-ApiContext" = $payLoad; "SPHome-MicroserviceFlights" = "SPHomeServiceChangeLog;SPHomeServicePersonalCache;SPHomeServiceOLSAsPrimary";"SPHome-ClientType" = "Web";"Authorization" = "Bearer $accessToken"}
-            $res = JosL-WebRequest -body "" -url "$resource/api/v1/sites/followed?mostRecentFirst=true&start=0&count=100&fillSiteData=true" -method POST -customHeaders $customHeaders -contentType "application/json;odata=verbose" -accept "application/json;odata=verbose"
+            $customHeaders = @{"SPHome-ApiContext" = $payLoad; "SPHome-MicroserviceFlights" = "SPHomeServiceChangeLog;SPHomeServicePersonalCache;SPHomeServiceOLSAsPrimary";"SPHome-ClientType" = "Web";"Authorization" = "Bearer $accessToken"} 
+            $res = New-WebRequest -body "" -url "$resource/api/v1/sites/followed?mostRecentFirst=true&start=0&count=100&fillSiteData=true" -method POST -customHeaders $customHeaders -contentType "application/json;odata=verbose" -accept "application/json;odata=verbose"
             $results = ($res.Content | convertfrom-json).Items
         }catch{
             log -text "Failed to retrieve favorite sites" -fout
@@ -3316,13 +3339,13 @@ if($autoMapFavoriteSites){
                         break
                     }
                 }
-
+                
                 $desiredMappings +=   @{"displayName"=$($result.Title);"targetLocationType"="driveletter";"targetLocationPath"="$($drvletter):";"sourceLocationPath" = $result.Url; "webDavPath"=$desiredUrl;"mapOnlyForSpecificGroup"="favoritesPlaceholder"}
                 log -text "Adding $($result.Url) as $($result.Title) to mapping list as drive $drvletter"
             }
             if(@($desiredMappings | Where-Object {$_.displayName -eq $result.Title}).Count -gt 0){
-                $suffixCounter++
-            }
+                $suffixCounter++    
+            }            
             if($autoMapFavoritesMode -eq "Onedrive"){
                 [Array]$odMapping = @($desiredMappings | Where-Object{$_.sourceLocationPath -eq "autodetect"})
                 if($odMapping.Count -le 0){
@@ -3331,15 +3354,15 @@ if($autoMapFavoriteSites){
                 $path  = "$($odMapping[0].targetLocationPath)\$autoMapFavoritesLabel"
                 $desiredMappings +=   @{"displayName"="$($result.Title)$suffixCounter";"targetLocationType"="networklocation";"targetLocationPath"="$($path)";"sourceLocationPath" = $result.Url; "webDavPath"=$desiredUrl;"mapOnlyForSpecificGroup"="favoritesPlaceholder"}
                 log -text "Adding $($result.Url) as $($result.Title)$suffixCounter to mapping list as network shortcut in $path"
-            }
-            if($autoMapFavoritesMode -eq "Converged"){
+            } 
+            if($autoMapFavoritesMode -eq "Converged"){ 
                 $desiredMappings +=   @{"displayName"="$($result.Title)$suffixCounter";"targetLocationType"="networklocation";"targetLocationPath"="$($autoMapFavoritesDriveletter):";"sourceLocationPath" = $result.Url; "webDavPath"=$desiredUrl;"mapOnlyForSpecificGroup"="favoritesPlaceholder"}
-                log -text "Adding $($result.Url) as $($result.Title)$suffixCounter to mapping list as network shortcut in a converged drive with letter $autoMapFavoritesDriveletter"
+                log -text "Adding $($result.Url) as $($result.Title)$suffixCounter to mapping list as network shortcut in a converged drive with letter $autoMapFavoritesDriveletter"               
             }
         }
     }else{
         log -text "autoMapFavoriteSites is not supported in authMethod IE :(" -fout
-    }
+    }   
 }
 
 #generate cookies
@@ -3347,43 +3370,64 @@ for($count=0;$count -lt $desiredMappings.Count;$count++){
     if($desiredMappings[$count].alreadyMapped){continue}
     if($desiredMappings[$count].sourceLocationPath -eq "autodetect"){
         if($authMethod -ne "native"){
-            $url = $script:ie.LocationURL
+            $url = $script:ie.LocationURL 
             $timeSpent = 0
             while($url.IndexOf("/personal/") -eq -1){
-                log -text "Attempting to detect username at $url, waited for $timeSpent seconds"
+                log -text "Attempting to detect username at $url, waited for $timeSpent seconds" 
                 $script:ie.navigate($baseURL)
                 waitForIE
                 if($timeSpent -gt 60){
-                    log -text "Failed to get the username from the URL for over $timeSpent seconds while at $url, aborting" -fout
+                    log -text "Failed to get the username from the URL for over $timeSpent seconds while at $url, aborting" -fout 
                     $errorsForUser += "Mapping cannot continue because we cannot detect your username`n"
-                    abort_OM
+                    abort_OM 
                 }
                 Start-Sleep -s 2
                 $timeSpent+=2
                 $url = $script:ie.LocationURL
             }
             try{
-                $start = $url.IndexOf("/personal/")+10
-                $end = $url.IndexOf("/",$start)
-                $userURL = $url.Substring($start,$end-$start)
-                $mapURL = $mapURLpersonal + $userURL + "\" + $libraryName
+                $start = $url.IndexOf("/personal/")+10 
+                $end = $url.IndexOf("/",$start) 
+                $userURL = $url.Substring($start,$end-$start) 
+                $mapURL = $mapURLpersonal + $userURL + "\" + $libraryName 
             }catch{
                 log -text "Failed to get the username while at $url, aborting" -fout
                 $errorsForUser += "Mapping cannot continue because we cannot detect your username`n"
-                abort_OM
+                abort_OM 
             }
-            $desiredMappings[$count].webDavPath = $mapURL
+            $desiredMappings[$count].webDavPath = $mapURL 
             log -text "Detected user: $($userURL)"
             log -text "Onedrive cookie generated"
         }else{
-            log -text "Retrieving Onedrive for Business cookie step 1..."
+            log -text "Retrieving Onedrive for Business cookie step 1..." 
             #trigger forced authentication to SpO O4B and follow the redirect
             try{
-                $res = JosL-WebRequest -url $baseURL -method GET
+                $res = New-WebRequest -url $baseURL -method GET
             }catch{
                 log -text "Failed to retrieve cookie for Onedrive for Business: $($Error[0])" -fout
             }
-            $res = handleSpoReAuth -res $res
+
+            #follow first 1-2 redirects, fail if none are detected or if redirects are detected but fail (abnormal flow)
+            try{
+                $res = (handleO365Redirect -res $res)[0]
+            }catch{
+                continue
+            }
+
+            #MFA check
+            try{
+                $res = handleMFArequest -res $res -clientId $clientId
+                log -text "MFA challenge completed"
+            }catch{
+                log -text "MFA check result: $_"
+            }    
+
+            #sometimes additional redirects are needed, fail if redirects fail, succeed if none are detected or if they are followed
+            try{
+                $res = (handleO365Redirect -res $res)[0]
+            }catch{
+                continue
+            } 
 
             $stillProvisioning = $True
             $timeWaited = 0
@@ -3399,34 +3443,34 @@ for($count=0;$count -lt $desiredMappings.Count;$count++){
                     if($res.rawResponse.ResponseUri.OriginalString.IndexOf("/personal/") -ne -1){
                         $url = $res.rawResponse.ResponseUri.OriginalString
                         $stillProvisioning = $False
-                        $start = $url.IndexOf("/personal/")+10
-                        $end = $url.IndexOf("/",$start)
-                        $userURL = $url.Substring($start,$end-$start)
+                        $start = $url.IndexOf("/personal/")+10 
+                        $end = $url.IndexOf("/",$start) 
+                        $userURL = $url.Substring($start,$end-$start) 
                         $mapURL = $mapURLpersonal + $userURL + "\" + $libraryName
                         log -text "username detected, your onedrive should be at $mapURL"
                         break
                     }else{
                         Throw "No username detected in response string"
-                    }
+                    }  
                 }catch{
                     log -text "Waited for $timeWaited seconds for O4b auto provisioning..."
                 }
                 if($timeWaited -gt 0){
-                    $res = JosL-WebRequest -url "https://$($O365CustomerName)-my.sharepoint.com/_layouts/15/MyBraryFirstRun.aspx?FirstRunStage=waiting" -method GET
+                    $res = New-WebRequest -url "https://$($O365CustomerName)-my.sharepoint.com/_layouts/15/MyBraryFirstRun.aspx?FirstRunStage=waiting" -method GET
                 }
                 Start-Sleep -s 10
-                $res = JosL-WebRequest -url $baseURL -method GET
+                $res = New-WebRequest -url $baseURL -method GET
                 $timeWaited += 10
             }
-            $desiredMappings[$count].webDavPath = $mapURL
+            $desiredMappings[$count].webDavPath = $mapURL 
             log -text "Onedrive cookie generated"
-        }
+        }               
     }else{
         log -text "Initiating Sharepoint session with: $($desiredMappings[$count].sourceLocationPath)"
         $spURL = $desiredMappings[$count].sourceLocationPath #URL to browse to
         #original IE method to set cookies
         if($authMethod -ne "native"){
-            log -text "Current location: $($script:ie.LocationURL)"
+            log -text "Current location: $($script:ie.LocationURL)" 
             $script:ie.navigate($spURL) #check the URL
             $waited = 0
             waitForIE
@@ -3439,21 +3483,43 @@ for($count=0;$count -lt $desiredMappings.Count;$count++){
                     break
                 }
             }
-            if($script:ie.Document.IHTMLDocument2_url -like "res://ieframe.dll/http_404.htm*" -or $script:ie.HWND -eq $null) {
+            if($script:ie.Document.IHTMLDocument2_url -like "res://ieframe.dll/http_404.htm*" -or $script:ie.HWND -eq $null) { 
                 log -text "Failed to browse to Sharepoint URL $spURL.`n" -fout
-            }
-            log -text "Current location: $($script:ie.LocationURL)"
+            } 
+            log -text "Current location: $($script:ie.LocationURL)" 
         }else{#new method to set cookies
-            log -text "Retrieving Sharepoint cookie step 1..."
+            log -text "Retrieving Sharepoint cookie step 1..." 
             #trigger forced authentication to SpO and follow the redirect if needed
             try{
-                $res = JosL-WebRequest -url $spURL -method GET
+                $res = New-WebRequest -url $spURL -method GET
             }catch{
                 log -text "Failed to retrieve cookie for SpO, will not map this site: $($Error[0])" -fout
                 $desiredMappings[$count].alreadyMapped = $True
                 continue
             }
-            $res = handleSpoReAuth -res $res
+
+            #follow first 1-2 redirects, fail if none are detected or if redirects are detected but fail (abnormal flow)
+            try{
+                $res = (handleO365Redirect -res $res)[0]
+            }catch{
+                continue
+            }
+
+            #MFA check
+            try{
+                $res = handleMFArequest -res $res -clientId $clientId
+                log -text "MFA challenge completed"
+            }catch{
+                log -text "MFA check result: $_"
+            }    
+
+            #sometimes additional redirects are needed, fail if redirects fail, succeed if none are detected or if they are followed
+            try{
+                $res = (handleO365Redirect -res $res)[0]
+            }catch{
+                continue
+            } 
+
             if($desiredMappings[$count]."mapOnlyForSpecificGroup" -eq "favoritesPlaceholder"){
                 try{
                     try{
@@ -3465,7 +3531,7 @@ for($count=0;$count -lt $desiredMappings.Count;$count++){
                             Throw
                         }
                     }
-
+                    
                     if(!$documentLibrary){
                         Throw
                     }else{
@@ -3478,7 +3544,7 @@ for($count=0;$count -lt $desiredMappings.Count;$count++){
                     }
                 }catch{
                     log -text "Failed to auto detect document library name for $($desiredMappings[$count].displayName), defaulting to $($desiredMappings[$count].webDavPath)\$($favoriteSitesDLName)" -fout
-                    $desiredMappings[$count].webDavPath = "$($desiredMappings[$count].webDavPath)\$($favoriteSitesDLName)"
+                    $desiredMappings[$count].webDavPath = "$($desiredMappings[$count].webDavPath)\$($favoriteSitesDLName)"                   
                 }
             }
         }
@@ -3503,7 +3569,7 @@ if($authMethod -eq "native"){
 foreach($mapping in $desiredMappings){
     if($mapping.alreadyMapped){continue}
     $mapresult = MapDrive $mapping
-    if($mapping.sourceLocationPath -eq "autodetect"){
+    if($mapping.sourceLocationPath -eq "autodetect"){   
         if($autoMapFavoritesMode -eq "Onedrive"){
             $path  = "$($mapping.targetLocationPath)\$autoMapFavoritesLabel"
             if(![System.IO.Directory]::Exists($path)){
@@ -3516,9 +3582,9 @@ foreach($mapping in $desiredMappings){
             }else{
                 try{
                     Get-ChildItem $path | Remove-Item -Force -Confirm:$False -Recurse
-                }catch{$Null}
+                }catch{$Null}    
             }
-        }
+        }      
         if($addShellLink -and $windowsVersion -eq 6 -and $mapping.targetLocationType -eq "driveletter" -and [System.IO.Directory]::Exists($mapping.targetLocationPath)){
             try{
                 $res = createFavoritesShortcutToO4B -targetLocation $mapping.targetLocationPath
@@ -3527,7 +3593,7 @@ foreach($mapping in $desiredMappings){
             }
         }
     }
-}
+} 
 
 #update progress bar
 if($showProgressBar) {
