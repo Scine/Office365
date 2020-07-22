@@ -1,0 +1,70 @@
+##This is the powershell code needed to push out a welcome email through Azure/Office 365 by finding
+##all accounts that were created in the last day, and scheduling it in Azure's Automated Account Playbook to run daily.
+##I used these following sites as a template into getting all of this tied together and working.  Enjoy!
+
+##https://docs.microsoft.com/en-us/azure/automation/learn/automation-tutorial-runbook-textual-powershell
+##https://docs.microsoft.com/en-us/azure/automation/manage-office-365
+##https://docs.microsoft.com/en-us/azure/automation/shared-resources/credentials
+
+##Note:  You'll have to create an Office 365 email account for the emails to flow through, and a set of Azure Automation
+##account credentials for all of this to work.  I've made it so that both are the same, so it creates less confusion.
+
+##If I've missed anyone to give credit to for helping shape this project, my apologies!
+
+
+Import-Module Orchestrator.AssetManagement.Cmdlets -ErrorAction SilentlyContinue
+$credentials = Get-AutomationPSCredential -Name 'Welcome Email'
+$Session = New-PSSession –ConfigurationName Microsoft.Exchange -ConnectionUri https://outlook.office365.com/powershell-liveid -Credential $Credentials -Authentication Basic -AllowRedirection
+Import-PSSession -Session $Session -DisableNameChecking:$true -AllowClobber:$true | Out-Null
+
+#Connect-MsolService -Credential $credentials
+#Import-Module (Import-PSSession -Session $session -DisableNameChecking -AllowClobber -DisableNameChecking) -Global
+[string]$Checkdate = (Get-Date).AddDays(-2)
+$Users = (Get-Mailbox -Filter "WhenMailboxCreated -gt '$CheckDate'" -RecipientTypeDetails UserMailbox -ResultSize Unlimited | Select WhenMailboxCreated, DisplayName, UserPrincipalName, PrimarySmtpAddress)
+ForEach ($User in $Users) {
+      $EmailRecipient = $User.PrimarySmtpAddress
+      Write-Host "Sending welcome email to" $User.DisplayName}
+
+
+
+$MsgFrom = "welcomeemail@domain.com" 
+$SMTPServer = "outlook.office365.com" 
+$emailSubject = "Welcome!"
+$SmtpPort = "587"
+ 
+# Define some variables for the message
+#HTML header with styles
+$htmlhead="
+     <style>
+      BODY{font-family: Arial; font-size: 10pt;}
+	H1{font-size: 22px;}
+	H2{font-size: 18px; padding-top: 10px;}
+	H3{font-size: 16px; padding-top: 8px;}
+    </style>"
+#Header for the message
+$HtmlBody = "
+     <h1>Welcome to Our Company</h1>
+     <p><strong>Generated:</strong> $(Get-Date -Format g)</p>  
+     <h2><u>We're Pleased to Have You Here</u></h2>"
+ 
+# Find all mailboxes created in the target period
+ 
+ForEach ($User in $Users) {
+      $EmailRecipient = $User.PrimarySmtpAddress
+      Write-Host "Sending welcome email to" $User.DisplayName
+      $htmlHeaderUser = "<h2>Welcome " + $User.DisplayName + "</h2>"
+      $htmlline1 = "<p><b>Welcome to Office 365</b></p>"
+      $htmlline2 = "<p>You can open Office 365 by clicking <a href='http://portal.office.com'>here</a> </p>"
+      $htmlline3 = "<p>Have a great time and be sure to call the help desk if you need assistance.</p>"
+      $htmlbody = $htmlheaderUser + $htmlline1 + $htmlline2 + $htmlline3 + "<p>"
+      $HtmlMsg = "" + $HtmlHead + $HtmlBody
+     # Construct the message parameters and send it off...
+        $MsgParam = @{
+         To = $EmailRecipient
+         From = $MsgFrom
+         Subject = "Welcome!"
+         Body = $HtmlMsg
+         SmtpServer = $SmtpServer
+         Port = $SmtpPort
+         Credential = $Credentials }
+         Send-MailMessage @msgParam -UseSSL -BodyAsHTML}
