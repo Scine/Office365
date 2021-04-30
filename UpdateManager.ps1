@@ -8,6 +8,7 @@ $data = Import-Csv users.csv
 foreach ($row in $data)
 {
 #INFO in the Console
+#Note:  The CSV called users.csv should have the columes "User Username" and "Manager Username"
 Write-Host "Updating the user :"  $row.'User Username'    " manager to "  $row.'Manager Username'  -ForegroundColor Yellow 
 
 #Updating the Manager 
