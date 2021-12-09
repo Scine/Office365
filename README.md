@@ -4,5 +4,5 @@ That being said, most of these scripts I've written and commented on as much as 
                    
 You can find the GPL license at https://www.gnu.org/licenses/gpl-3.0.en.html
 
-Basically, if you like the scripts, enjoy them, share them, maybe talk nicely about me at a company party while getting drunk at the open bar.  :)
+Basically, if you like the scripts, enjoy them, share them, maybe talk nicely about me at a company party.  :)
 
