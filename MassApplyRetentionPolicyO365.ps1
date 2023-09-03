@@ -13,5 +13,8 @@ Import-Module $((Get-ChildItem -Path $($env:LOCALAPPDATA+"\Apps\2.0\") -Filter M
 $EXOSession = New-ExoPSSession
 Import-PSSession $EXOSession
 
+$retentionPolicy = "Standard"
+$retentionComment = "Standard Retention Policy  - 90-day delete"
+$retentionURL = "https://support.youdomain.com/policies/retention/standard.html"
 
-$UserMailboxes = Get-Mailbox -Filter {(RecipientTypeDetails -eq 'UserMailbox')} $UserMailboxes | Set-Mailbox –RetentionPolicy <Policy name>
+$UserMailboxes = Get-Mailbox -Filter {(RecipientTypeDetails -eq 'UserMailbox')} $UserMailboxes | Set-Mailbox –RetentionPolicy $retentionPolicy -RetentionComment $retentionComment -RetentionURL $retentionURL
